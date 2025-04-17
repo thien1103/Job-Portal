@@ -5,85 +5,78 @@ import { User } from "../models/user.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../configs/cloudinary.js";
 import { createError } from "../utils/appError.js";
-import { registerValidationRules, validate } from "../validators/user.validator.js";
 
-export const register = [
-    registerValidationRules(),
-    validate,
-    async (req, res) => {
-        try {
-            const { fullname, email, phoneNumber, password, role } = req.body;
+export const register = async (req, res, next) => {
+    try {
+        const { fullname, email, phoneNumber, password, role } = req.body;
 
-            const file = req.file;
-            if (!file) {
-                throw createError('Profile photo is required', 400);
-            }
-
-            const fileUri = getDataUri(file);
-            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-
-            const user = await User.findOne({ email });
-            if (user) {
-                throw createError('User already exists with this email', 400);
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-
-            const newUser = await User.create({
-                fullname,
-                email,
-                phoneNumber,
-                password: hashedPassword,
-                role,
-                profile: {
-                    profilePhoto: cloudResponse.secure_url,
-                }
-            });
-
-            return res.status(201).json({
-                message: "Account created successfully.",
-                data: {
-                    email: newUser.email,
-                    fullname: newUser.fullname,
-                },
-            });
-        } catch (error) {
-            console.log(error);
+        if (!fullname || !email || !password || !role) {
+            throw createError('Fullname, email, password, and role are required', 400);
         }
-    }
-];
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw createError('Invalid email format', 400);
+        }
 
-export const login = async (req, res) => {
+        const file = req.file;
+        if (!file) {
+            throw createError('Profile photo is required', 400);
+        }
+
+        const fileUri = getDataUri(file);
+        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+
+        const user = await User.findOne({ email });
+        if (user) {
+            throw createError('User already exists with this email', 400);
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await User.create({
+            fullname,
+            email,
+            phoneNumber,
+            password: hashedPassword,
+            role,
+            profile: {
+                profilePhoto: cloudResponse.secure_url,
+            }
+        });
+
+        return res.status(201).json({
+            message: "Account created successfully.",
+            data: {
+                email: newUser.email,
+                fullname: newUser.fullname,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const login = async (req, res, next) => {
     try {
         const { email, password, role } = req.body;
 
         if (!email || !password || !role) {
-            console.log(email, password, role);
-            return res.status(400).json({
-                message: "Something is missing",
-                success: false
-            });
-        };
+            throw createError('Email, password, and role are required', 400);
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw createError('Invalid email format', 400);
+        }
+
         let user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({
-                message: "Incorrect email or password.",
-                success: false,
-            })
+            throw createError("Incorrect email or password", 400);
         }
         const isPasswordMatch = await bcrypt.compare(password, user.password);
         if (!isPasswordMatch) {
-            return res.status(400).json({
-                message: "Incorrect email or password.",
-                success: false,
-            })
+            throw createError("Incorrect email or password", 400);
         };
         // check role is correct or not
         if (role !== user.role) {
-            return res.status(400).json({
-                message: "Account doesn't exist with current role.",
-                success: false
-            })
+            throw createError("Account doesn't exist with current role", 400);
         };
 
         const tokenData = {
@@ -106,25 +99,33 @@ export const login = async (req, res) => {
             success: true
         })
     } catch (error) {
-        console.log(error);
+        next(error);
     }
-}
-export const logout = async (req, res) => {
+};
+
+export const logout = async (req, res, next) => {
     try {
         return res.status(200).cookie("token", "", { maxAge: 0 }).json({
             message: "Logged out successfully.",
             success: true
         })
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 }
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res, next) => {
     try {
         const { fullname, email, phoneNumber, bio, skills } = req.body;
 
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw createError('Invalid email format', 400);
+        }
+        if (fullname && !fullname.trim()) {
+            throw createError('Fullname cannot be empty', 400);
+        }
+
         const file = req.file;
-        // cloudinary ayega idhar
+        // cloudinary
         const fileUri = getDataUri(file);
         const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
 
@@ -138,10 +139,14 @@ export const updateProfile = async (req, res) => {
         let user = await User.findById(userId);
 
         if (!user) {
-            return res.status(400).json({
-                message: "User not found.",
-                success: false
-            })
+            throw createError('User not found', 404);
+        }
+
+        if (email && email !== user.email) {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                throw createError('Email already in use', 400);
+            }
         }
         // updating data
         if (fullname) user.fullname = fullname
@@ -174,6 +179,6 @@ export const updateProfile = async (req, res) => {
             success: true
         })
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 }
