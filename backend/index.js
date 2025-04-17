@@ -8,7 +8,7 @@ import userRoute from "./routes/user.route.js";
 import companyRoute from "./routes/company.route.js";
 import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
-import redisClient from "./configs/redis.js";
+// import redisClient from "./configs/redis.js";
 import { errorHandler } from './middlewares/errorHandler.js';
 
 dotenv.config({});

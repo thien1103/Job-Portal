@@ -32,6 +32,23 @@ export const registerValidationRules = () => [
         .withMessage('Role must be either "applicant", "recruiter" or "admin"'),
 ];
 
+export const loginValidationRules = () => [
+    body('email')
+        .trim()
+        .notEmpty()
+        .withMessage('Email is required')
+        .isEmail()
+        .withMessage('Please provide a valid email address'),
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required'),
+    body('role')
+        .notEmpty()
+        .withMessage('Role is required')
+        .isIn(['applicant', 'recruiter', 'admin'])
+        .withMessage('Role must be either "applicant", "recruiter", or "admin"'),
+];
+
 export const validate = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
