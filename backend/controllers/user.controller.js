@@ -149,18 +149,20 @@ export const updateProfile = async (req, res, next) => {
             }
         }
         // updating data
-        if (fullname) user.fullname = fullname
-        if (email) user.email = email
-        if (phoneNumber) user.phoneNumber = phoneNumber
-        if (bio) user.profile.bio = bio
-        if (skills) user.profile.skills = skillsArray
+        const updates = {};
+        if (fullname) updates.fullname = fullname;
+        if (email) updates.email = email;
+        if (phoneNumber) updates.phoneNumber = phoneNumber;
+        if (bio) updates['profile.bio'] = bio;
+        if (skillsArray) updates['profile.skills'] = skillsArray;
 
         // resume comes later here...
         if (cloudResponse) {
-            user.profile.resume = cloudResponse.secure_url // save the cloudinary url
-            user.profile.resumeOriginalName = file.originalname // Save the original file name
+            updates['profile.resume'] = cloudResponse.secure_url;
+            updates['profile.resumeOriginalName'] = file.originalname;
         }
 
+        user.set(updates);
 
         await user.save();
 
