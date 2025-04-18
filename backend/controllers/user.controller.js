@@ -126,9 +126,17 @@ export const updateProfile = async (req, res, next) => {
 
         const file = req.file;
         // cloudinary
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-
+        // const fileUri = getDataUri(file);
+        // const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+        let cloudResponse;
+        if (file) {
+            try {
+                const fileUri = getDataUri(file);
+                cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            } catch (uploadError) {
+                throw createError('Failed to upload file to Cloudinary', 500);
+            }
+        }
 
 
         let skillsArray;
@@ -157,6 +165,7 @@ export const updateProfile = async (req, res, next) => {
         if (skillsArray) updates['profile.skills'] = skillsArray;
 
         // resume comes later here...
+
         if (cloudResponse) {
             updates['profile.resume'] = cloudResponse.secure_url;
             updates['profile.resumeOriginalName'] = file.originalname;
