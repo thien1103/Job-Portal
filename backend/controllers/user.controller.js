@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../configs/cloudinary.js";
 import { createError } from "../utils/appError.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/token.js";
 
 export const register = async (req, res, next) => {
     try {
@@ -82,7 +83,9 @@ export const login = async (req, res, next) => {
         const tokenData = {
             userId: user._id
         }
-        const token = await jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        const token = await generateAccessToken(user);
+        const refreshToken = await generateRefreshToken(user);
 
         user = {
             _id: user._id,
@@ -93,7 +96,21 @@ export const login = async (req, res, next) => {
             profile: user.profile
         }
 
-        return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpsOnly: true, secure: true, sameSite: 'None' }).json({
+        // Set cookies
+        res.cookie('token', token, {
+            httpsOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 30 * 60 * 1000,
+        });
+        res.cookie('refreshToken', refreshToken, {
+            httpsOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({
             message: `Welcome back ${user.fullname}`,
             user,
             success: true
@@ -105,10 +122,70 @@ export const login = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
     try {
-        return res.status(200).cookie("token", "", { maxAge: 0 }).json({
-            message: "Logged out successfully.",
-            success: true
-        })
+        // Clear both cookies
+        res.cookie('token', '', {
+            httpsOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 0,
+        });
+        res.cookie('refreshToken', '', {
+            httpsOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 0,
+        });
+
+        return res.status(200).json({
+            message: 'Logged out successfully.',
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const refreshToken = async (req, res, next) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            throw createError('No refresh token provided', 401);
+        }
+
+        // Verify refresh token
+        let decoded;
+        try {
+            decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        } catch (error) {
+            throw createError('Invalid refresh token', 403);
+        }
+
+        // Find user
+        const user = await User.findById(decoded.userId);
+        if (!user) {
+            throw createError('User not found', 404);
+        }
+
+        // Generate new tokens
+        const newAccessToken = await generateAccessToken(user);
+        const newRefreshToken = await generateRefreshToken(user);
+
+        // Set new tokens in cookies
+        res.cookie('token', newAccessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 30 * 60 * 1000,
+        });
+        res.cookie('refreshToken', newRefreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({ message: 'Token refreshed', success: true });
     } catch (error) {
         next(error);
     }
@@ -126,8 +203,6 @@ export const updateProfile = async (req, res, next) => {
 
         const file = req.file;
         // cloudinary
-        // const fileUri = getDataUri(file);
-        // const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
         let cloudResponse;
         if (file) {
             try {
