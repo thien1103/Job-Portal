@@ -18,6 +18,15 @@ export const register = async (req, res, next) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             throw createError('Invalid email format', 400);
         }
+        if (isNaN(phoneNumber) || phoneNumber <= 0) {
+            throw createError('Phone number is invalid', 400);
+        }
+        if (password.length < 6) {
+            throw createError('Password must have at least 6 characters', 400);
+        }
+        if (!['applicant', 'recruiter', 'admin'].includes(role)) {
+            throw createError('Role is invalid', 400);
+        }
 
         const file = req.file;
         if (!file) {
@@ -66,6 +75,15 @@ export const login = async (req, res, next) => {
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             throw createError('Invalid email format', 400);
+        }
+        if (isNaN(phoneNumber) || phoneNumber <= 0) {
+            throw createError('Phone number is invalid', 400);
+        }
+        if (password.length < 6) {
+            throw createError('Password must have at least 6 characters', 400);
+        }
+        if (!['applicant', 'recruiter', 'admin'].includes(role)) {
+            throw createError('Role is invalid', 400);
         }
 
         let user = await User.findOne({ email });
@@ -171,7 +189,7 @@ export const refreshToken = async (req, res, next) => {
         // Check refreshToken in database
         const storedToken = await RefreshToken.findOne({ token: refreshToken });
         if (!storedToken || storedToken.expiresAt < new Date()) {
-            throw createError('Refresh token không hợp lệ hoặc đã hết hạn', 403);
+            throw createError('Refresh token is invalid or expired', 403);
         }
 
         // Find user
@@ -191,7 +209,7 @@ export const refreshToken = async (req, res, next) => {
             token: newRefreshToken,
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         });
-        
+
         // Set new tokens in cookies
         res.cookie('token', newAccessToken, {
             httpOnly: true,
@@ -239,7 +257,7 @@ export const updateProfile = async (req, res, next) => {
         if (skills) {
             skillsArray = skills.split(",");
         }
-        const userId = req.user.id; // middleware authentication
+        const userId = req.user._id; // middleware authentication
         let user = await User.findById(userId);
         console.log(user);
         if (!user) {
@@ -288,4 +306,39 @@ export const updateProfile = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+}; 
+
+export const changePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user._id;
+
+        if (!currentPassword || !newPassword) {
+            throw createError('Current password and new password are required', 400);
+        }
+        if (newPassword.length < 6) {
+            throw createError('New password must have at least 6 characters', 400);
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError('User not found', 404);
+        }
+
+        const isPasswordMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordMatch) {
+            throw createError('Current password is not correct', 400);
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedNewPassword;
+        await user.save();
+
+        return res.status(200).json({
+            message: 'Password changed successfully',
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
