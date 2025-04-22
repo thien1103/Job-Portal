@@ -19,7 +19,7 @@ export const isAuthenticated = async (req, res, next) => {
         next();
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
-            return next(createError('Access token đã hết hạn', 401));
+            return next(createError('Access token expired', 401));
         }
         next(error);
     }

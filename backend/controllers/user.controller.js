@@ -218,9 +218,9 @@ export const updateProfile = async (req, res, next) => {
         if (skills) {
             skillsArray = skills.split(",");
         }
-        const userId = req.id; // middleware authentication
+        const userId = req.user.id; // middleware authentication
         let user = await User.findById(userId);
-
+        console.log(user);
         if (!user) {
             throw createError('User not found', 404);
         }
