@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import { User } from "../models/user.model.js";
+import { RefreshToken } from '../models/token.model.js';
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../configs/cloudinary.js";
 import { createError } from "../utils/appError.js";
@@ -80,12 +81,14 @@ export const login = async (req, res, next) => {
             throw createError("Account doesn't exist with current role", 400);
         };
 
-        const tokenData = {
-            userId: user._id
-        }
-
         const token = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
+
+        await RefreshToken.create({
+            userId: user._id,
+            token: refreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
 
         user = {
             _id: user._id,
@@ -122,6 +125,10 @@ export const login = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
     try {
+        const refreshToken = req.cookies.refreshToken;
+        if (refreshToken) {
+            await RefreshToken.deleteOne({ token: refreshToken });
+        }
         // Clear both cookies
         res.cookie('token', '', {
             httpsOnly: true,
@@ -161,6 +168,12 @@ export const refreshToken = async (req, res, next) => {
             throw createError('Invalid refresh token', 403);
         }
 
+        // Check refreshToken in database
+        const storedToken = await RefreshToken.findOne({ token: refreshToken });
+        if (!storedToken || storedToken.expiresAt < new Date()) {
+            throw createError('Refresh token không hợp lệ hoặc đã hết hạn', 403);
+        }
+
         // Find user
         const user = await User.findById(decoded.userId);
         if (!user) {
@@ -171,6 +184,14 @@ export const refreshToken = async (req, res, next) => {
         const newAccessToken = await generateAccessToken(user);
         const newRefreshToken = await generateRefreshToken(user);
 
+        // Delete old refresh token and save a new one
+        await RefreshToken.deleteOne({ token: refreshToken });
+        await RefreshToken.create({
+            userId: user._id,
+            token: newRefreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
+        
         // Set new tokens in cookies
         res.cookie('token', newAccessToken, {
             httpOnly: true,
