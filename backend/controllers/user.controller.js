@@ -76,9 +76,6 @@ export const login = async (req, res, next) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             throw createError('Invalid email format', 400);
         }
-        if (isNaN(phoneNumber) || phoneNumber <= 0) {
-            throw createError('Phone number is invalid', 400);
-        }
         if (password.length < 6) {
             throw createError('Password must have at least 6 characters', 400);
         }
@@ -232,6 +229,8 @@ export const refreshToken = async (req, res, next) => {
 export const updateProfile = async (req, res, next) => {
     try {
         const { fullname, email, phoneNumber, bio, skills } = req.body;
+        const userId = req.user._id; // middleware authentication
+        const file = req.file;
 
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             throw createError('Invalid email format', 400);
@@ -240,26 +239,20 @@ export const updateProfile = async (req, res, next) => {
             throw createError('Fullname cannot be empty', 400);
         }
 
-        const file = req.file;
         // cloudinary
         let cloudResponse;
         if (file) {
             try {
                 const fileUri = getDataUri(file);
-                cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+                cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+                    resource_type: "image",
+                });
             } catch (uploadError) {
                 throw createError('Failed to upload file to Cloudinary', 500);
             }
         }
 
-
-        let skillsArray;
-        if (skills) {
-            skillsArray = skills.split(",");
-        }
-        const userId = req.user._id; // middleware authentication
         let user = await User.findById(userId);
-        console.log(user);
         if (!user) {
             throw createError('User not found', 404);
         }
@@ -276,13 +269,15 @@ export const updateProfile = async (req, res, next) => {
         if (email) updates.email = email;
         if (phoneNumber) updates.phoneNumber = phoneNumber;
         if (bio) updates['profile.bio'] = bio;
-        if (skillsArray) updates['profile.skills'] = skillsArray;
+        if (skills) {
+            updates["profile.skills"] = Array.isArray(skills)
+                ? skills
+                : skills.split(",").map((s) => s.trim());
+        }
+        if (cloudResponse) updates["profile.profilePhoto"] = cloudResponse.secure_url;
 
-        // resume comes later here...
-
-        if (cloudResponse) {
-            updates['profile.resume'] = cloudResponse.secure_url;
-            updates['profile.resumeOriginalName'] = file.originalname;
+        if (Object.keys(updates).length === 0) {
+            throw createError("No valid fields provided for update", 400);
         }
 
         user.set(updates);
@@ -306,7 +301,7 @@ export const updateProfile = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}; 
+};
 
 export const changePassword = async (req, res, next) => {
     try {

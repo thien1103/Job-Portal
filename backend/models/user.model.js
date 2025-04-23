@@ -32,7 +32,26 @@ const userSchema = new mongoose.Schema({
         profilePhoto: {
             type: String,
             default: ""
-        }
+        },
+        experience: [
+            {
+                jobTitle: { type: String },
+                company: { type: String },
+                startDate: { type: Date },
+                endDate: { type: Date },
+                description: { type: String },
+            },
+        ],
+        education: [
+            {
+                degree: { type: String },
+                institution: { type: String },
+                startDate: { type: Date },
+                endDate: { type: Date },
+            },
+        ],
+        isPublic: { type: Boolean, default: false },
+        viewCount: { type: Number, default: 0 },
     },
 }, { timestamps: true });
 export const User = mongoose.model('User', userSchema);
