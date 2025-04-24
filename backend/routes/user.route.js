@@ -1,7 +1,6 @@
 import express from "express";
 import {
-    login, logout, refreshToken, register, updateProfile, changePassword,
-    addExperience, addEducation, getProfile,
+    login, logout, refreshToken, register, updateProfile, changePassword, getProfile,
     uploadCV, getCVs, getCV, updateCV, deleteCV
 } from "../controllers/user.controller.js";
 import { isAuthenticated } from "../middlewares/isAuthenticated.js";
@@ -15,8 +14,6 @@ router.get("/logout", logout);
 router.post("/refresh-token", refreshToken);
 router.get("/profile", isAuthenticated, getProfile);
 router.post("/profile/update", isAuthenticated, singleUpload, updateProfile);
-router.post("/profile/experience", isAuthenticated, addExperience);
-router.post("/profile/education", isAuthenticated, addEducation);
 router.patch('/change-password', isAuthenticated, changePassword);
 
 router.get("/cv", isAuthenticated, getCVs);
