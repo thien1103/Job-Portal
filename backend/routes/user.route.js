@@ -1,7 +1,9 @@
 import express from "express";
 import {
     login, logout, refreshToken, register, updateProfile, changePassword, getProfile,
-    uploadCV, getCVs, getCV, updateCV, deleteCV
+    uploadCV, getCVs, getCV, updateCV, deleteCV,
+    addExperience, getExperience, updateExperience, deleteExperience,
+    addEducation, getEducation, updateEducation, deleteEducation,
 } from "../controllers/user.controller.js";
 import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 import { singleUpload } from "../middlewares/multer.js";
@@ -14,6 +16,14 @@ router.get("/logout", logout);
 router.post("/refresh-token", refreshToken);
 router.get("/profile", isAuthenticated, getProfile);
 router.post("/profile/update", isAuthenticated, singleUpload, updateProfile);
+router.post("/profile/experience", isAuthenticated, addExperience);
+router.get("/profile/experience", isAuthenticated, getExperience);
+router.patch("/profile/experience/:id", isAuthenticated, updateExperience);
+router.delete("/profile/experience/:id", isAuthenticated, deleteExperience);
+router.post("/profile/education", isAuthenticated, addEducation);
+router.get("/profile/education", isAuthenticated, getEducation);
+router.patch("/profile/education/:id", isAuthenticated, updateEducation);
+router.delete("/profile/education/:id", isAuthenticated, deleteEducation);
 router.patch('/change-password', isAuthenticated, changePassword);
 
 router.get("/cv", isAuthenticated, getCVs);

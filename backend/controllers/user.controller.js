@@ -230,7 +230,7 @@ export const refreshToken = async (req, res, next) => {
 }
 export const updateProfile = async (req, res, next) => {
     try {
-        const { fullname, email, phoneNumber, bio, skills, experience, education, } = req.body;
+        const { fullname, email, phoneNumber, bio, skills } = req.body;
         const userId = req.user._id; // middleware authentication
         const file = req.file;
 
@@ -239,36 +239,6 @@ export const updateProfile = async (req, res, next) => {
         }
         if (fullname && !fullname.trim()) {
             throw createError('Fullname cannot be empty', 400);
-        }
-
-        // Validate experience
-        if (experience) {
-            experience.forEach((exp) => {
-                if (!exp.jobTitle || !exp.company || !exp.startDate) {
-                    throw createError("jobTitle, company, and startDate are required for experience", 400);
-                }
-                if (exp.startDate && !/^\d{4}-\d{2}-\d{2}$/.test(exp.startDate)) {
-                    throw createError("Invalid startDate format in experience (use YYYY-MM-DD)", 400);
-                }
-                if (exp.endDate && !/^\d{4}-\d{2}-\d{2}$/.test(exp.endDate)) {
-                    throw createError("Invalid endDate format in experience (use YYYY-MM-DD)", 400);
-                }
-            });
-        }
-
-        // Validate education
-        if (education) {
-            education.forEach((edu) => {
-                if (!edu.degree || !edu.institution || !edu.startDate) {
-                    throw createError("degree, institution, and startDate are required for education", 400);
-                }
-                if (edu.startDate && !/^\d{4}-\d{2}-\d{2}$/.test(edu.startDate)) {
-                    throw createError("Invalid startDate format in education (use YYYY-MM-DD)", 400);
-                }
-                if (edu.endDate && !/^\d{4}-\d{2}-\d{2}$/.test(edu.endDate)) {
-                    throw createError("Invalid endDate format in education (use YYYY-MM-DD)", 400);
-                }
-            });
         }
 
         let user = await User.findById(userId);
@@ -293,23 +263,6 @@ export const updateProfile = async (req, res, next) => {
                 ? skills
                 : skills.split(",").map((s) => s.trim());
         }
-        if (experience) {
-            updates["profile.experience"] = experience.map((exp) => ({
-                jobTitle: exp.jobTitle,
-                company: exp.company,
-                startDate: new Date(exp.startDate),
-                endDate: exp.endDate ? new Date(exp.endDate) : null,
-                description: exp.description || "",
-            }));
-        }
-        if (education) {
-            updates["profile.education"] = education.map((edu) => ({
-                degree: edu.degree,
-                institution: edu.institution,
-                startDate: new Date(edu.startDate),
-                endDate: edu.endDate ? new Date(edu.endDate) : null,
-            }));
-        }
 
         if (Object.keys(updates).length === 0) {
             throw createError("No valid fields provided for update", 400);
@@ -319,41 +272,23 @@ export const updateProfile = async (req, res, next) => {
 
         await user.save();
 
-        // user = {
-        //     _id: user._id,
-        //     fullname: user.fullname,
-        //     email: user.email,
-        //     phoneNumber: user.phoneNumber,
-        //     role: user.role,
-        //     profile: user.profile
-        // }
-        const userResponse = {
+        user = {
             _id: user._id,
             fullname: user.fullname,
             email: user.email,
             phoneNumber: user.phoneNumber,
             role: user.role,
             profile: {
-                ...user.profile.toObject(),
-                experience: user.profile.experience.map((exp) => ({
-                    jobTitle: exp.jobTitle,
-                    company: exp.company,
-                    startDate: exp.startDate,
-                    endDate: exp.endDate,
-                    description: exp.description,
-                })),
-                education: user.profile.education.map((edu) => ({
-                    degree: edu.degree,
-                    institution: edu.institution,
-                    startDate: edu.startDate,
-                    endDate: edu.endDate,
-                })),
+                profilePhoto: user.profile.profilePhoto,
+                skills: user.profile.skills,
+                bio: user.profile.bio,
+                isPublic: user.profile.isPublic,
             },
-        };
-
+        }
+        
         return res.status(200).json({
             message: "Profile updated successfully.",
-            user: userResponse,
+            user,
             success: true
         })
     } catch (error) {
@@ -560,4 +495,274 @@ export const updateCV = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
+
+export const addExperience = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { jobTitle, company, startDate, endDate, description } = req.body;
+
+        if (!jobTitle || !company || !startDate) {
+            throw createError("jobTitle, company, and startDate are required", 400);
+        }
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+            throw createError("Invalid startDate format (use YYYY-MM-DD)", 400);
+        }
+        if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            throw createError("Invalid endDate format (use YYYY-MM-DD)", 400);
+        }
+
+        const experienceData = {
+            jobTitle,
+            company,
+            startDate: new Date(startDate),
+            endDate: endDate ? new Date(endDate) : null,
+            description: description || "",
+        };
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                $push: { "profile.experience": experienceData },
+                updatedAt: new Date(),
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(201).json({
+            message: "Experience added successfully",
+            experience: user.profile.experience,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getExperience = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(200).json({
+            message: "Experience retrieved successfully",
+            experience: user.profile.experience,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateExperience = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { id } = req.params;
+        const { jobTitle, company, startDate, endDate, description } = req.body;
+
+        if (!jobTitle || !company || !startDate) {
+            throw createError("jobTitle, company, and startDate are required", 400);
+        }
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+            throw createError("Invalid startDate format (use YYYY-MM-DD)", 400);
+        }
+        if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            throw createError("Invalid endDate format (use YYYY-MM-DD)", 400);
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        const experience = user.profile.experience.id(id);
+        if (!experience) {
+            throw createError("Experience not found", 404);
+        }
+
+        experience.jobTitle = jobTitle;
+        experience.company = company;
+        experience.startDate = new Date(startDate);
+        experience.endDate = endDate ? new Date(endDate) : null;
+        experience.description = description || "";
+
+        await user.save();
+
+        return res.status(200).json({
+            message: "Experience updated successfully",
+            experience: user.profile.experience,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteExperience = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { id } = req.params;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        const experience = user.profile.experience.id(id);
+        if (!experience) {
+            throw createError("Experience not found", 404);
+        }
+
+        user.profile.experience.pull(id);
+        await user.save();
+
+        return res.status(200).json({
+            message: "Experience deleted successfully",
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const addEducation = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { degree, institution, startDate, endDate } = req.body;
+
+        if (!degree || !institution || !startDate) {
+            throw createError("degree, institution, and startDate are required", 400);
+        }
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+            throw createError("Invalid startDate format (use YYYY-MM-DD)", 400);
+        }
+        if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            throw createError("Invalid endDate format (use YYYY-MM-DD)", 400);
+        }
+
+        const educationData = {
+            degree,
+            institution,
+            startDate: new Date(startDate),
+            endDate: endDate ? new Date(endDate) : null,
+        };
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                $push: { "profile.education": educationData },
+                updatedAt: new Date(),
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(201).json({
+            message: "Education added successfully",
+            education: user.profile.education,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getEducation = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(200).json({
+            message: "Education retrieved successfully",
+            education: user.profile.education,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateEducation = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { id } = req.params;
+        const { degree, institution, startDate, endDate } = req.body;
+
+        if (!degree || !institution || !startDate) {
+            throw createError("degree, institution, and startDate are required", 400);
+        }
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+            throw createError("Invalid startDate format (use YYYY-MM-DD)", 400);
+        }
+        if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            throw createError("Invalid endDate format (use YYYY-MM-DD)", 400);
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        const education = user.profile.education.id(id);
+        if (!education) {
+            throw createError("Education not found", 404);
+        }
+
+        education.degree = degree;
+        education.institution = institution;
+        education.startDate = new Date(startDate);
+        education.endDate = endDate ? new Date(endDate) : null;
+
+        await user.save();
+
+        return res.status(200).json({
+            message: "Education updated successfully",
+            education: user.profile.education,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteEducation = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { id } = req.params;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        const education = user.profile.education.id(id);
+        if (!education) {
+            throw createError("Education not found", 404);
+        }
+
+        user.profile.education.pull(id);
+        await user.save();
+
+        return res.status(200).json({
+            message: "Education deleted successfully",
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
