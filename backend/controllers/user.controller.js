@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import path from "path";
 
 import { User } from "../models/user.model.js";
+import { CV } from "../models/cv.model.js";
 import { RefreshToken } from '../models/token.model.js';
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../configs/cloudinary.js";
@@ -448,3 +450,150 @@ export const changePassword = async (req, res, next) => {
         next(error);
     }
 };
+
+export const uploadCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const file = req.file;
+
+        if (!file) {
+            throw createError("PDF file is required", 400);
+        }
+
+        const title = path.basename(file.originalname, ".pdf");
+        if (!title) {
+            throw createError("Invalid file name", 400);
+        }
+
+        const fileUri = getDataUri(file);
+        const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+            resource_type: "raw",
+        });
+
+        const cvData = {
+            userId,
+            title,
+            resume: cloudResponse.secure_url,
+            resumeOriginalName: file.originalname,
+            isPublic: false,
+            isUploaded: true,
+        };
+
+        const cv = await CV.create(cvData);
+
+        return res.status(201).json({
+            message: "CV uploaded successfully",
+            cv,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCVs = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { type } = req.query;
+
+        let query = { userId };
+        if (type === "uploaded") {
+            query.isUploaded = true;
+        }
+
+        const cvs = await CV.find(query).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "CVs retrieved successfully",
+            cvs,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { cvId } = req.params;
+
+        const cv = await CV.findOne({ _id: cvId, userId });
+        if (!cv) {
+            throw createError("CV not found or unauthorized", 404);
+        }
+
+        return res.status(200).json({
+            message: "CV retrieved successfully",
+            cv,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { cvId } = req.params;
+
+        const cv = await CV.findOne({ _id: cvId, userId });
+        if (!cv) {
+            throw createError("CV not found or unauthorized", 404);
+        }
+
+        await cv.deleteOne();
+
+        return res.status(200).json({
+            message: "CV deleted successfully",
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { cvId } = req.params;
+        const { title } = req.body;
+        const file = req.file;
+
+        const cv = await CV.findOne({ _id: cvId, userId, isUploaded: true });
+        if (!cv) {
+            throw createError("CV not found, not uploaded, or unauthorized", 404);
+        }
+
+        let cloudResponse;
+        let newTitle = cv.title;
+        let newResumeOriginalName = cv.resumeOriginalName;
+
+        if (file) {
+            const fileUri = getDataUri(file);
+            cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+                resource_type: "raw",
+            });
+            newTitle = title || path.basename(file.originalname, ".pdf");
+            newResumeOriginalName = title ? `${title}.pdf` : file.originalname;
+        } else if (title) {
+            newTitle = title;
+            newResumeOriginalName = `${title}.pdf`;
+        }
+
+        cv.title = newTitle;
+        cv.resume = cloudResponse ? cloudResponse.secure_url : cv.resume;
+        cv.resumeOriginalName = newResumeOriginalName;
+        cv.updatedAt = Date.now();
+
+        await cv.save();
+        return res.status(200).json({
+            message: "CV updated successfully",
+            cv,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
