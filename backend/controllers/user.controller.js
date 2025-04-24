@@ -303,6 +303,117 @@ export const updateProfile = async (req, res, next) => {
     }
 };
 
+export const addExperience = async (req, res, next) => {
+    try {
+        const userId = req.user._id; // From isAuthenticated
+        const { jobTitle, company, startDate, endDate, description } = req.body;
+
+        if (!jobTitle || !company || !startDate) {
+            throw createError("jobTitle, company, and startDate are required", 400);
+        }
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+            throw createError("Invalid startDate format (use YYYY-MM-DD)", 400);
+        }
+        if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            throw createError("Invalid endDate format (use YYYY-MM-DD)", 400);
+        }
+
+        const experienceData = {
+            jobTitle,
+            company,
+            startDate: new Date(startDate),
+            endDate: endDate ? new Date(endDate) : null,
+            description: description || "",
+        };
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                $push: { "profile.experience": experienceData },
+                updatedAt: new Date(),
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(201).json({
+            message: "Experience added successfully",
+            experience: user.profile.experience,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const addEducation = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { degree, institution, startDate, endDate } = req.body;
+
+        // Validation cơ bản
+        if (!degree || !institution || !startDate) {
+            throw createError("degree, institution, and startDate are required", 400);
+        }
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+            throw createError("Invalid startDate format (use YYYY-MM-DD)", 400);
+        }
+        if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            throw createError("Invalid endDate format (use YYYY-MM-DD)", 400);
+        }
+
+        const educationData = {
+            degree,
+            institution,
+            startDate: new Date(startDate),
+            endDate: endDate ? new Date(endDate) : null,
+        };
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                $push: { "profile.education": educationData },
+                updatedAt: new Date(),
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(201).json({
+            message: "Education added successfully",
+            education: user.profile.education,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getProfile = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId).select("-password");
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        return res.status(200).json({
+            message: "Profile retrieved successfully",
+            user,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
