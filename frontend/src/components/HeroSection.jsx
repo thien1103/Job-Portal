@@ -1,41 +1,53 @@
-import React, { useState } from 'react'
-import { Button } from './ui/button'
-import { Search } from 'lucide-react'
+import React from 'react';
+import { Button } from './ui/button';
+import { Search } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { setSearchedQuery } from '@/redux/jobSlice';
 import { useNavigate } from 'react-router-dom';
+import bannerImage from '../assets/banner_1.png'
 
 const HeroSection = () => {
-    const [query, setQuery] = useState("");
+    const [query, setQuery] = React.useState("");
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
     const searchJobHandler = () => {
         dispatch(setSearchedQuery(query));
-        navigate("/browse");
-    }
+        navigate("/");
+    };
 
     return (
-        <div className='text-center'>
-            <div className='flex flex-col gap-5 my-10'>
-                <span className=' mx-auto px-4 py-2 rounded-full bg-gray-100 text-[#F83002] font-medium'>No. 1 Job Hunt Website</span>
-                <h1 className='text-5xl font-bold'>Search, Apply & <br /> Get Your <span className='text-[#6A38C2]'>Dream Jobs</span></h1>
-                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquid aspernatur temporibus nihil tempora dolor!</p>
-                <div className='flex w-[40%] shadow-lg border border-gray-200 pl-3 rounded-full items-center gap-4 mx-auto'>
-                    <input
-                        type="text"
-                        placeholder='Find your dream jobs'
-                        onChange={(e) => setQuery(e.target.value)}
-                        className='outline-none border-none w-full'
+        <div className='relative'>
+            <div className='hidden md:block top-0 -mt-14 p-0 absolute object-cover -z-10'>
+            <img src={bannerImage} alt='hero' className='w-[85%] ml-48' />
+            </div>
 
-                    />
-                    <Button onClick={searchJobHandler} className="rounded-r-full bg-[#6A38C2]">
-                        <Search className='h-5 w-5' />
-                    </Button>
+            <div className='max-w-screen-2xl container mx-auto px-4 md:py-8 py-2'>
+                <div className='grid my-32 md:grid-cols-2 gap-4 justify-center items-center'>
+                    <div>
+                        <h1 className='text-5xl font-bold text-primary mb-3 ml-32'>Find your job today!</h1>
+                        <p className='text-lg text-black mb-8 ml-32'>Empowering you to find the perfect opportunity.</p>
+                        {/* <button 
+                            className='bg-[#087658] text-white py-3 px-12 rounded-md'
+                        >
+                            Get Started
+                        </button> */}
+                        <div className='flex w-[70%] shadow-lg border border-gray-200 pl-2 rounded-full items-center gap-4 mx-auto'>
+                        <input
+                            type="text"
+                            placeholder='Find your dream jobs'
+                            onChange={(e) => setQuery(e.target.value)}
+                            className='outline-none border-none w-full'
+                        />
+                        <Button onClick={searchJobHandler} className="rounded-r-full bg-[#087658]">
+                            <Search className='h-5 w-5' />
+                        </Button>
+                    </div>
+                    </div>
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default HeroSection
+export default HeroSection;
