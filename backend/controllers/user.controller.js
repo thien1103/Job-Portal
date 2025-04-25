@@ -212,14 +212,14 @@ export const refreshToken = async (req, res, next) => {
         // Set new tokens in cookies
         res.cookie('token', newAccessToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'None',
+            // secure: true,
+            sameSite: 'strict',
             maxAge: 30 * 60 * 1000,
         });
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'None',
+            // secure: true,
+            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -314,23 +314,18 @@ export const getProfile = async (req, res, next) => {
 
 export const setProfilePublic = async (req, res, next) => {
     try {
-        const { isPublic } = req.body;
         const userId = req.user._id;
-
-        if (typeof isPublic !== "boolean") {
-            throw createError("isPublic must be a boolean", 400);
-        }
 
         const user = await User.findById(userId);
         if (!user) {
             throw createError("User not found", 404);
         }
 
-        user.profile.isPublic = isPublic;
+        user.profile.isPublic = !user.profile.isPublic;
         await user.save();
 
         return res.status(200).json({
-            message: `Profile set to ${isPublic ? "public" : "private"} successfully`,
+            message: `Profile set to ${user.profile.isPublic ? "public" : "private"} successfully`,
             success: true,
         });
     } catch (error) {
@@ -397,7 +392,7 @@ export const uploadCV = async (req, res, next) => {
             title,
             resume: cloudResponse.secure_url,
             resumeOriginalName: file.originalname,
-            isPublic: false,
+            isPrimary: false,
             isUploaded: true,
         };
 
@@ -520,6 +515,39 @@ export const updateCV = async (req, res, next) => {
     }
 };
 
+export const setPrimaryCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { cvId } = req.params;
+
+        const cv = await CV.findOne({ _id: cvId, userId, isUploaded: true });
+        if (!cv) {
+            throw createError("CV not found, not uploaded, or unauthorized", 404);
+        }
+
+        const newIsPrimary = !cv.isPrimary;
+        if (newIsPrimary) {
+            await CV.updateMany({ userId, _id: { $ne: cvId } }, { isPrimary: false });
+        }
+        cv.isPrimary = newIsPrimary;
+        cv.updatedAt = Date.now();
+        await cv.save();
+
+        return res.status(200).json({
+            message: `CV "${cv.title}" set to ${newIsPrimary ? "primary" : "non-primary"} successfully`,
+            cv: {
+                _id: cv._id,
+                title: cv.title,
+                isPrimary: cv.isPrimary,
+                resume: cv.resume,
+                resumeOriginalName: cv.resumeOriginalName,
+            },
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 export const addExperience = async (req, res, next) => {
     try {
         const userId = req.user._id;

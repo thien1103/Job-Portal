@@ -1,7 +1,7 @@
 import express from "express";
 import {
     login, logout, refreshToken, register, updateProfile, changePassword, getProfile,
-    uploadCV, getCVs, getCV, updateCV, deleteCV, setProfilePublic,
+    uploadCV, getCVs, getCV, updateCV, deleteCV, setPrimaryCV, setProfilePublic,
     addExperience, getExperience, updateExperience, deleteExperience,
     addEducation, getEducation, updateEducation, deleteEducation,
 } from "../controllers/user.controller.js";
@@ -33,6 +33,7 @@ router.post("/cv/upload", isAuthenticated, singleUpload, uploadCV);
 router.get("/cv/:cvId", isAuthenticated, getCV);
 router.patch("/cv/:cvId", isAuthenticated, singleUpload, updateCV);
 router.delete("/cv/:cvId", isAuthenticated, deleteCV);
+router.patch("/cv/:cvId/primary", isAuthenticated, setPrimaryCV);
 
 export default router;
 
