@@ -19,7 +19,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 const corsOptions = {
-    origin: true,
+    // origin: true,
+    origin: "https://job-portal-4cda.onrender.com",
     credentials: true
 }
 
