@@ -12,7 +12,7 @@ const cvSchema = new mongoose.Schema({
     },
     resume: { type: String },
     resumeOriginalName: { type: String },
-    isPublic: { type: Boolean, default: false },
+    isPrimary: { type: Boolean, default: false },
     isUploaded: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

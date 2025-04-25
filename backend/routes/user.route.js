@@ -14,6 +14,8 @@ router.post("/register", singleUpload, register);
 router.post("/login", login);
 router.get("/logout", logout);
 router.post("/refresh-token", refreshToken);
+router.patch('/change-password', isAuthenticated, changePassword);
+
 router.get("/profile", isAuthenticated, getProfile);
 router.post("/profile/update", isAuthenticated, singleUpload, updateProfile);
 router.patch("/profile/public", isAuthenticated, setProfilePublic);
@@ -25,7 +27,6 @@ router.post("/profile/education", isAuthenticated, addEducation);
 router.get("/profile/education", isAuthenticated, getEducation);
 router.patch("/profile/education/:id", isAuthenticated, updateEducation);
 router.delete("/profile/education/:id", isAuthenticated, deleteEducation);
-router.patch('/change-password', isAuthenticated, changePassword);
 
 router.get("/cv", isAuthenticated, getCVs);
 router.post("/cv/upload", isAuthenticated, singleUpload, uploadCV);
