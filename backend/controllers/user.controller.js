@@ -232,7 +232,6 @@ export const updateProfile = async (req, res, next) => {
     try {
         const { fullname, email, phoneNumber, bio, skills } = req.body;
         const userId = req.user._id; // middleware authentication
-        const file = req.file;
 
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             throw createError('Invalid email format', 400);
@@ -269,7 +268,6 @@ export const updateProfile = async (req, res, next) => {
         }
 
         user.set(updates);
-
         await user.save();
 
         user = {
@@ -282,7 +280,6 @@ export const updateProfile = async (req, res, next) => {
                 profilePhoto: user.profile.profilePhoto,
                 skills: user.profile.skills,
                 bio: user.profile.bio,
-                isPublic: user.profile.isPublic,
             },
         }
         
@@ -308,6 +305,47 @@ export const getProfile = async (req, res, next) => {
         return res.status(200).json({
             message: "Profile retrieved successfully",
             user,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const setProfilePublic = async (req, res, next) => {
+    try {
+        const { isPublic } = req.body;
+        const userId = req.user._id;
+
+        if (typeof isPublic !== "boolean") {
+            throw createError("isPublic must be a boolean", 400);
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        user.profile.isPublic = isPublic;
+        await user.save();
+
+        const userResponse = {
+            _id: user._id,
+            fullname: user.fullname,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            profile: {
+                profilePhoto: user.profile.profilePhoto,
+                skills: user.profile.skills,
+                bio: user.profile.bio,
+                isPublic: user.profile.isPublic,
+            },
+        };
+
+        return res.status(200).json({
+            message: `Profile set to ${isPublic ? "public" : "private"} successfully`,
+            user: userResponse,
             success: true,
         });
     } catch (error) {

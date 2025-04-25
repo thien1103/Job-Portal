@@ -1,7 +1,7 @@
 import express from "express";
 import {
     login, logout, refreshToken, register, updateProfile, changePassword, getProfile,
-    uploadCV, getCVs, getCV, updateCV, deleteCV,
+    uploadCV, getCVs, getCV, updateCV, deleteCV, setProfilePublic,
     addExperience, getExperience, updateExperience, deleteExperience,
     addEducation, getEducation, updateEducation, deleteEducation,
 } from "../controllers/user.controller.js";
@@ -16,6 +16,7 @@ router.get("/logout", logout);
 router.post("/refresh-token", refreshToken);
 router.get("/profile", isAuthenticated, getProfile);
 router.post("/profile/update", isAuthenticated, singleUpload, updateProfile);
+router.patch("/profile/public", isAuthenticated, setProfilePublic);
 router.post("/profile/experience", isAuthenticated, addExperience);
 router.get("/profile/experience", isAuthenticated, getExperience);
 router.patch("/profile/experience/:id", isAuthenticated, updateExperience);
