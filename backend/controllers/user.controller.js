@@ -329,23 +329,8 @@ export const setProfilePublic = async (req, res, next) => {
         user.profile.isPublic = isPublic;
         await user.save();
 
-        const userResponse = {
-            _id: user._id,
-            fullname: user.fullname,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            role: user.role,
-            profile: {
-                profilePhoto: user.profile.profilePhoto,
-                skills: user.profile.skills,
-                bio: user.profile.bio,
-                isPublic: user.profile.isPublic,
-            },
-        };
-
         return res.status(200).json({
             message: `Profile set to ${isPublic ? "public" : "private"} successfully`,
-            user: userResponse,
             success: true,
         });
     } catch (error) {
