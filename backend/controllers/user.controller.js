@@ -119,14 +119,14 @@ export const login = async (req, res, next) => {
         // Set cookies
         res.cookie('token', token, {
             httpsOnly: true,
-            secure: true,
-            sameSite: 'None',
+            // secure: true,
+            sameSite: 'strict',
             maxAge: 30 * 60 * 1000,
         });
         res.cookie('refreshToken', refreshToken, {
             httpsOnly: true,
-            secure: true,
-            sameSite: 'None',
+            // secure: true,
+            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -149,14 +149,14 @@ export const logout = async (req, res, next) => {
         // Clear both cookies
         res.cookie('token', '', {
             httpsOnly: true,
-            secure: true,
-            sameSite: 'None',
+            // secure: true,
+            sameSite: 'strict',
             maxAge: 0,
         });
         res.cookie('refreshToken', '', {
             httpsOnly: true,
-            secure: true,
-            sameSite: 'None',
+            // secure: true,
+            sameSite: 'strict',
             maxAge: 0,
         });
 
@@ -282,7 +282,7 @@ export const updateProfile = async (req, res, next) => {
                 bio: user.profile.bio,
             },
         }
-        
+
         return res.status(200).json({
             message: "Profile updated successfully.",
             user,
