@@ -817,3 +817,73 @@ export const deleteEducation = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getApplicantProfile = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findById(userId).select(
+            "fullname email phoneNumber role profile experience education"
+        );
+
+        if (!user) {
+            throw createError("Applicant not found", 404);
+        }
+        if (!user.profile.isPublic) {
+            throw createError("Applicant's profile is not public", 403);
+        }
+
+        const userResponse = {
+            fullname: user.fullname,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            profile: {
+                profilePhoto: user.profile.profilePhoto,
+                skills: user.profile.skills,
+                bio: user.profile.bio,
+            },
+            experience: user.experience,
+            education: user.education,
+        };
+
+        return res.status(200).json({
+            message: "Applicant profile retrieved successfully",
+            user: userResponse,
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getApplicantPrimaryCV = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId).select("profile.isPublic");
+        if (!user) {
+            throw createError("Applicant not found", 404);
+        }
+
+        if (!user.profile.isPublic) {
+            throw createError("Applicant's profile is not public", 403);
+        }
+
+        const cv = await CV.findOne({ userId, isPrimary: true, isUploaded: true });
+        if (!cv) {
+            throw createError("No primary CV found or CV not uploaded", 404);
+        }
+
+        return res.status(200).json({
+            message: "Primary CV retrieved successfully",
+            cv: {
+                title: cv.title,
+                resume: cv.resume,
+                resumeOriginalName: cv.resumeOriginalName,
+            },
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
