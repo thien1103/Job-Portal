@@ -30,13 +30,12 @@ export const register = async (req, res, next) => {
             throw createError('Role is invalid', 400);
         }
 
-        const file = req.file;
-        if (!file) {
-            throw createError('Profile photo is required', 400);
+        let profilePhoto = "";
+        if (req.file) {
+            const fileUri = getDataUri(req.file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            profilePhoto = cloudResponse.secure_url;
         }
-
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
 
         const user = await User.findOne({ email });
         if (user) {
@@ -52,7 +51,7 @@ export const register = async (req, res, next) => {
             password: hashedPassword,
             role,
             profile: {
-                profilePhoto: cloudResponse.secure_url,
+                profilePhoto,
             }
         });
 

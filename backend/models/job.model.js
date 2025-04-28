@@ -16,9 +16,9 @@ const jobSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    experienceLevel:{
-        type:Number,
-        required:true,
+    experienceLevel: {
+        type: Number,
+        required: true,
     },
     location: {
         type: String,
@@ -26,6 +26,7 @@ const jobSchema = new mongoose.Schema({
     },
     jobType: {
         type: String,
+        enum: ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'],
         required: true
     },
     position: {
@@ -47,6 +48,18 @@ const jobSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Application',
         }
-    ]
-},{timestamps:true});
+    ],
+    deadline: {
+        type: Date,
+        required: true
+    },
+    benefits: [{
+        type: String
+    }],
+    level: {
+        type: String,
+        enum: ['Intern', 'Fresher', 'Junior', 'Senior', 'Manager', 'Director'],
+        required: true
+    }
+}, { timestamps: true });
 export const Job = mongoose.model("Job", jobSchema);
