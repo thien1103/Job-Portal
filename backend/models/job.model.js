@@ -58,7 +58,7 @@ const jobSchema = new mongoose.Schema({
     }],
     level: {
         type: String,
-        enum: ['Intern', 'Fresher', 'Junior', 'Senior', 'Manager', 'Director'],
+        enum: ['Intern', 'Fresher', 'Junior', 'middle', 'Senior', 'Manager', 'Director'],
         required: true
     }
 }, { timestamps: true });

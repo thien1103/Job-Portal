@@ -232,34 +232,39 @@ export const updateProfile = async (req, res, next) => {
         const { fullname, email, phoneNumber, bio, skills } = req.body;
         const userId = req.user._id; // middleware authentication
 
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            throw createError('Invalid email format', 400);
+        if (email !== undefined && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw createError("Invalid email format", 400);
         }
-        if (fullname && !fullname.trim()) {
-            throw createError('Fullname cannot be empty', 400);
+        if (fullname !== undefined && fullname && !fullname.trim()) {
+            throw createError("Fullname cannot be empty", 400);
         }
 
         let user = await User.findById(userId);
         if (!user) {
-            throw createError('User not found', 404);
+            throw createError("User not found", 404);
         }
 
-        if (email && email !== user.email) {
+        if (email !== undefined && email && email !== user.email) {
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                throw createError('Email already in use', 400);
+                throw createError("Email already in use", 400);
             }
         }
+
         // updating data
         const updates = {};
-        if (fullname) updates.fullname = fullname;
-        if (email) updates.email = email;
-        if (phoneNumber) updates.phoneNumber = phoneNumber;
-        if (bio) updates['profile.bio'] = bio;
-        if (skills) {
-            updates["profile.skills"] = Array.isArray(skills)
-                ? skills
-                : skills.split(",").map((s) => s.trim());
+        if (fullname !== undefined) updates.fullname = fullname;
+        if (email !== undefined) updates.email = email;
+        if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+        if (bio !== undefined) updates["profile.bio"] = bio;
+        if (skills !== undefined) {
+            if (Array.isArray(skills)) {
+                updates["profile.skills"] = skills.map(item => item.trim()).filter(item => item);
+            } else if (typeof skills === "string") {
+                updates["profile.skills"] = skills.split(",").map(item => item.trim()).filter(item => item);
+            } else {
+                throw createError("Skills must be a string or array of strings", 400);
+            }
         }
 
         if (Object.keys(updates).length === 0) {
