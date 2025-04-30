@@ -11,6 +11,18 @@ export const registerCompany = async (req, res, next) => {
             throw createError("Company name is required", 400);
         }
 
+        let finalDescription;
+        if (Array.isArray(description)) {
+            finalDescription = description.map(item => item.trim()).filter(item => item).join("\n");
+        } else if (typeof description === "string") {
+            finalDescription = description;
+        } else {
+            throw createError("Description must be a string or array of strings", 400);
+        }
+        if (!finalDescription.trim()) {
+            throw createError("Description cannot be empty", 400);
+        }
+
         let companyExists = await Company.findOne({ name: companyName });
         if (companyExists) {
             throw createError("A company with this name already exists", 400);
@@ -24,19 +36,25 @@ export const registerCompany = async (req, res, next) => {
         const company = await Company.create({
             name: companyName,
             userId,
-            description,
+            description: finalDescription,
             website,
             location,
             contactInfo: { email: contactEmail, phone: contactPhone }
         });
 
         const companyResponse = await Company.findById(company._id).select('-userId');
+        const descriptionLines = companyResponse.description
+            ? companyResponse.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
 
         return res.status(201).json({
             message: "Company registered successfully.",
-            company: companyResponse,
+            company: {
+                ...companyResponse._doc,
+                description: descriptionLines
+            },
             success: true
-        })
+        });
     } catch (error) {
         next(error);
     }
@@ -49,10 +67,17 @@ export const getCompany = async (req, res, next) => {
             throw createError("Company not found", 404);
         }
 
+        const descriptionLines = company.description
+            ? company.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+
         return res.status(200).json({
-            company,
+            company: {
+                ...company._doc,
+                description: descriptionLines
+            },
             success: true
-        })
+        });
     } catch (error) {
         next(error);
     }
@@ -67,8 +92,15 @@ export const getCompanyById = async (req, res, next) => {
             throw createError("Company not found", 404);
         }
 
+        const descriptionLines = company.description
+            ? company.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+
         return res.status(200).json({
-            company,
+            company: {
+                ...company._doc,
+                description: descriptionLines
+            },
             success: true
         });
     } catch (error) {
@@ -99,6 +131,20 @@ export const updateCompany = async (req, res, next) => {
             }
         }
 
+        let finalDescription;
+        if (description !== undefined) {
+            if (Array.isArray(description)) {
+                finalDescription = description.map(item => item.trim()).filter(item => item).join("\n");
+            } else if (typeof description === "string") {
+                finalDescription = description;
+            } else {
+                throw createError("Description must be a string or array of strings", 400);
+            }
+            if (!finalDescription.trim()) {
+                throw createError("Description cannot be empty", 400);
+            }
+        }
+
         let logo = company.logo;
         if (req.file) {
             const fileUri = getDataUri(req.file);
@@ -108,7 +154,7 @@ export const updateCompany = async (req, res, next) => {
 
         const updateData = {
             name,
-            description,
+            description: finalDescription,
             website,
             location,
             logo,
@@ -116,11 +162,18 @@ export const updateCompany = async (req, res, next) => {
         };
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-        const updatedCompany = await Company.findByIdAndUpdate(companyId, updateData, { new: true });
+        const updatedCompany = await Company.findByIdAndUpdate(companyId, updateData, { new: true }).select('-userId');
+
+        const descriptionLines = updatedCompany.description
+            ? updatedCompany.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
 
         return res.status(200).json({
             message: "Company information updated",
-            company: updatedCompany,
+            company: {
+                ...updatedCompany._doc,
+                description: descriptionLines
+            },
             success: true
         });
 
