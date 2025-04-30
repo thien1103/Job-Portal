@@ -1,130 +1,303 @@
 import { Application } from "../models/application.model.js";
 import { Job } from "../models/job.model.js";
+import { createError } from "../utils/appError.js";
+import { Company } from "../models/company.model.js";
 
-export const applyJob = async (req, res) => {
+import getDataUri from "../utils/datauri.js";
+import cloudinary from "../configs/cloudinary.js";
+
+export const applyJob = async (req, res, next) => {
     try {
-        const userId = req.id;
+        const userId = req.user._id;
         const jobId = req.params.id;
+        const file = req.file;
+        const { coverLetter } = req.body;
         if (!jobId) {
-            return res.status(400).json({
-                message: "Job id is required.",
-                success: false
-            })
+            throw createError("Job ID is required", 400);
         };
-        // check if the user has already applied for the job
+
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError("Job not found", 404);
+        }
+
         const existingApplication = await Application.findOne({ job: jobId, applicant: userId });
 
         if (existingApplication) {
-            return res.status(400).json({
-                message: "You have already applied for this jobs",
-                success: false
-            });
+            throw createError("You have already applied for this job", 400);
         }
 
-        // check if the jobs exists
-        const job = await Job.findById(jobId);
-        if (!job) {
-            return res.status(404).json({
-                message: "Job not found",
-                success: false
-            })
+        if (!file) {
+            throw createError("PDF file is required", 400);
         }
-        // create a new application
+
+        const fileUri = getDataUri(req.file);
+        const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+            resource_type: "raw",
+        });
+
+        let finalCoverLetter = "";
+        if (coverLetter) {
+            if (Array.isArray(coverLetter)) {
+                finalCoverLetter = coverLetter.map(item => item.trim()).filter(item => item).join("\n");
+            } else if (typeof coverLetter === "string") {
+                finalCoverLetter = coverLetter;
+            } else {
+                throw createError("Cover letter must be a string or array of strings", 400);
+            }
+        }
+
         const newApplication = await Application.create({
-            job:jobId,
-            applicant:userId,
+            job: jobId,
+            applicant: userId,
+            resume: cloudResponse.secure_url,
+            coverLetter: finalCoverLetter,
+            status: "pending"
         });
 
         job.applications.push(newApplication._id);
         await job.save();
+
+        const populatedApplication = await Application.findById(newApplication._id)
+            .populate({
+                path: "job",
+                select: "title description requirements company",
+                populate: {
+                    path: "company",
+                    select: "name description website location logo contactInfo"
+                }
+            });
+
+        const coverLetterLines = populatedApplication.coverLetter
+            ? populatedApplication.coverLetter.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+        const jobDescriptionLines = populatedApplication.job.description
+            ? populatedApplication.job.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+        const companyDescriptionLines = populatedApplication.job.company.description
+            ? populatedApplication.job.company.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+
         return res.status(201).json({
-            message:"Job applied successfully.",
-            success:true
-        })
+            message: "Job applied successfully",
+            application: {
+                id: populatedApplication._id,
+                job: {
+                    ...populatedApplication.job._doc,
+                    description: jobDescriptionLines,
+                    company: {
+                        ...populatedApplication.job.company._doc,
+                        description: companyDescriptionLines
+                    },
+                },
+                applicant: populatedApplication.applicant,
+                resume: populatedApplication.resume,
+                coverLetter: coverLetterLines,
+                status: populatedApplication.status,
+                createdAt: populatedApplication.createdAt,
+                updatedAt: populatedApplication.updatedAt
+            },
+            success: true
+        });
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 };
-export const getAppliedJobs = async (req,res) => {
+
+export const getAppliedJobs = async (req, res, next) => {
     try {
-        const userId = req.id;
-        const application = await Application.find({applicant:userId}).sort({createdAt:-1}).populate({
-            path:'job',
-            options:{sort:{createdAt:-1}},
-            populate:{
-                path:'company',
-                options:{sort:{createdAt:-1}},
-            }
-        });
-        if(!application){
-            return res.status(404).json({
-                message:"No Applications",
-                success:false
-            })
-        };
+        const userId = req.user._id;
+        const applications = await Application.find({ applicant: userId })
+            .sort({ createdAt: -1 })
+            .populate({
+                path: 'job',
+                select: "title description requirements company salary experienceLevel location jobType position deadline benefits level",
+                populate: {
+                    path: "company",
+                    select: "name description website location logo contactInfo"
+                }
+            });
+
+        if (!applications || applications.length === 0) {
+            throw createError("No applications found", 404);
+        }
+
+        const formattedApplications = applications.map(app => ({
+            id: app._id,
+            job: {
+                ...app.job._doc,
+                description: app.job.description
+                    ? app.job.description.split("\n").map(line => line.trim()).filter(line => line)
+                    : [],
+                company: {
+                    ...app.job.company._doc,
+                    description: app.job.company.description
+                        ? app.job.company.description.split("\n").map(line => line.trim()).filter(line => line)
+                        : []
+                },
+                deadline: app.job.deadline ? app.job.deadline.toISOString().split("T")[0] : null
+            },
+            applicant: app.applicant,
+            resume: app.resume,
+            coverLetter: app.coverLetter
+                ? app.coverLetter.split("\n").map(line => line.trim()).filter(line => line)
+                : [],
+            status: app.status,
+            createdAt: app.createdAt,
+            updatedAt: app.updatedAt
+        }));
+
         return res.status(200).json({
-            application,
-            success:true
-        })
+            message: "Applied jobs retrieve successfully",
+            applications: formattedApplications,
+            success: true
+        });
     } catch (error) {
-        console.log(error);
+        next(error);
     }
-}
-// admin dekhega kitna user ne apply kiya hai
-export const getApplicants = async (req,res) => {
+};
+
+export const getApplicants = async (req, res, next) => {
     try {
+        const userId = req.user._id;
         const jobId = req.params.id;
-        const job = await Job.findById(jobId).populate({
-            path:'applications',
-            options:{sort:{createdAt:-1}},
-            populate:{
-                path:'applicant'
-            }
-        });
-        if(!job){
-            return res.status(404).json({
-                message:'Job not found.',
-                success:false
+
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError("Job not found", 404);
+        }
+
+        const company = await Company.findOne({ userId });
+        if (!company || job.company.toString() !== company._id.toString()) {
+            throw createError("You are not authorized to view applications for this job", 403);
+        }
+
+        const applications = await Application.find({ job: jobId })
+            .sort({ createdAt: -1 })
+            .populate({
+                path: "applicant",
+                select: "name email"
             })
-        };
+            .populate({
+                path: "job",
+                select: "title description requirements company salary experienceLevel location jobType position deadline benefits level",
+                populate: {
+                    path: "company",
+                    select: "name description website location logo contactInfo"
+                }
+            });
+
+        if (!applications || applications.length === 0) {
+            throw createError("No applications found for this job", 404);
+        }
+
+        const formattedApplications = applications.map(app => ({
+            id: app._id,
+            job: {
+                ...app.job._doc,
+                description: app.job.description
+                    ? app.job.description.split("\n").map(line => line.trim()).filter(line => line)
+                    : [],
+                company: {
+                    ...app.job.company._doc,
+                    description: app.job.company.description
+                        ? app.job.company.description.split("\n").map(line => line.trim()).filter(line => line)
+                        : []
+                },
+                deadline: app.job.deadline ? app.job.deadline.toISOString().split("T")[0] : null
+            },
+            applicant: app.applicant,
+            resume: app.resume,
+            coverLetter: app.coverLetter
+                ? app.coverLetter.split("\n").map(line => line.trim()).filter(line => line)
+                : [],
+            status: app.status,
+            createdAt: app.createdAt,
+            updatedAt: app.updatedAt
+        }));
+
         return res.status(200).json({
-            job, 
-            succees:true
+            applications: formattedApplications,
+            success: true
         });
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 }
-export const updateStatus = async (req,res) => {
+export const updateStatus = async (req, res, next) => {
     try {
-        const {status} = req.body;
+        const userId = req.user._id;
         const applicationId = req.params.id;
-        if(!status){
-            return res.status(400).json({
-                message:'status is required',
-                success:false
-            })
-        };
+        const { status } = req.body;
 
-        // find the application by applicantion id
-        const application = await Application.findOne({_id:applicationId});
-        if(!application){
-            return res.status(404).json({
-                message:"Application not found.",
-                success:false
-            })
-        };
+        const validStatuses = ["pending", "accepted", "rejected"];
+        if (!status || !validStatuses.includes(status.toLowerCase())) {
+            throw createError(`Invalid status. Must be one of: ${validStatuses.join(", ")}`, 400);
+        }
 
-        // update the status
+        const application = await Application.findById(applicationId);
+        if (!application) {
+            throw createError("Application not found", 404);
+        }
+
+        const job = await Job.findById(application.job);
+        const company = await Company.findOne({ userId });
+        if (!company || job.company.toString() !== company._id.toString()) {
+            throw createError("You are not authorized to update this application", 403);
+        }
+
         application.status = status.toLowerCase();
         await application.save();
 
-        return res.status(200).json({
-            message:"Status updated successfully.",
-            success:true
-        });
+        const populatedApplication = await Application.findById(applicationId)
+            .populate({
+                path: "job",
+                select: "title description requirements company salary experienceLevel location jobType position deadline benefits level",
+                populate: {
+                    path: "company",
+                    select: "name description website location logo contactInfo"
+                }
+            })
+            .populate({
+                path: "applicant",
+                select: "name email"
+            });
 
+        const coverLetterLines = populatedApplication.coverLetter
+            ? populatedApplication.coverLetter.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+        const jobDescriptionLines = populatedApplication.job.description
+            ? populatedApplication.job.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+        const companyDescriptionLines = populatedApplication.job.company.description
+            ? populatedApplication.job.company.description.split("\n").map(line => line.trim()).filter(line => line)
+            : [];
+
+        return res.status(200).json({
+            message: "Status updated successfully",
+            application: {
+                id: populatedApplication._id,
+                job: {
+                    ...populatedApplication.job._doc,
+                    description: jobDescriptionLines,
+                    company: {
+                        ...populatedApplication.job.company._doc,
+                        description: companyDescriptionLines
+                    },
+                    deadline: populatedApplication.job.deadline
+                        ? populatedApplication.job.deadline.toISOString().split("T")[0]
+                        : null
+                },
+                applicant: populatedApplication.applicant,
+                resume: populatedApplication.resume,
+                coverLetter: coverLetterLines,
+                status: populatedApplication.status,
+                createdAt: populatedApplication.createdAt,
+                updatedAt: populatedApplication.updatedAt
+            },
+            success: true
+        });
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 }
