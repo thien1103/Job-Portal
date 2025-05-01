@@ -22,6 +22,7 @@ app.use(cookieParser());
 
 const allowedOrigins = [
     "http://localhost:5173",
+    "http://localhost:10000",
     "https://job-portal-4cda.onrender.com"
 ];
 const corsOptions = {
@@ -52,7 +53,7 @@ app.use("/job", jobRoute);
 app.use("/application", applicationRoute);
 app.use("/admin", adminRoute),
 
-app.use(errorHandler);
+    app.use(errorHandler);
 
 app.listen(PORT, async () => {
     await connectDB();
