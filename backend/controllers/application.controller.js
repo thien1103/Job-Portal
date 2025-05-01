@@ -300,4 +300,47 @@ export const updateStatus = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
+
+export const deleteApplication = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const applicationId = req.params.id;
+
+        const application = await Application.findById(applicationId).populate({
+            path: "job",
+            select: "company applications",
+            populate: {
+                path: "company",
+                select: "userId"
+            }
+        });
+
+        if (!application) {
+            throw createError("Application not found", 404);
+        }
+
+        if (application.resume) {
+            const publicId = application.resume.split("/").pop().split(".")[0]; 
+            await cloudinary.uploader.destroy(`resumes/${publicId}`, { resource_type: "raw" });
+        }
+
+        const job = application.job;
+        job.applications = job.applications.filter(appId => appId.toString() !== applicationId);
+        await job.save();
+
+        await Application.findByIdAndDelete(applicationId);
+
+        return res.status(200).json({
+            message: "Application deleted successfully",
+            data: {
+                applicationId,
+                jobId: application.job._id,
+                deletedBy: "recruiter"
+            },
+            success: true
+        });
+    } catch (error) {
+        next(error);
+    }
+};
