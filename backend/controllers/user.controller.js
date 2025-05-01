@@ -156,6 +156,26 @@ export const login = async (req, res, next) => {
     }
 };
 
+export const getCurrentUser = async (req, res, next) => {
+    try {
+        const user = req.user;
+        return res.status(200).json({
+            message: "User retrieved successfully",
+            user: {
+                _id: user._id,
+                fullname: user.fullname,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                role: user.role,
+                profile: user.profile
+            },
+            success: true
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const logout = async (req, res, next) => {
     try {
         const refreshToken = req.cookies.refreshToken;

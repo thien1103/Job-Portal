@@ -4,7 +4,8 @@ import {
     uploadCV, getCVs, getCV, updateCV, deleteCV, setPrimaryCV, setProfilePublic,
     addExperience, getExperience, updateExperience, deleteExperience,
     addEducation, getEducation, updateEducation, deleteEducation,
-    getApplicantProfile, getApplicantPrimaryCV
+    getApplicantProfile, getApplicantPrimaryCV,
+    getCurrentUser
 } from "../controllers/user.controller.js";
 import { isAuthenticated, isRecruiter } from "../middlewares/isAuthenticated.js";
 import { singleUpload } from "../middlewares/multer.js";
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.post("/register", singleUpload, register);
 router.post("/login", login);
+router.get("/me", isAuthenticated, getCurrentUser);
 router.get("/logout", logout);
 router.post("/refresh-token", refreshToken);
 router.patch('/change-password', isAuthenticated, changePassword);
