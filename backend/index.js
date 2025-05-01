@@ -26,9 +26,6 @@ const allowedOrigins = [
     "https://job-portal-4cda.onrender.com"
 ];
 const corsOptions = {
-    // origin: true,
-    // origin: "https://job-portal-4cda.onrender.com",
-    // credentials: true
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
