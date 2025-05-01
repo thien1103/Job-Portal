@@ -117,15 +117,15 @@ export const login = async (req, res, next) => {
 
         // Set cookies
         res.cookie('token', token, {
-            httpsOnly: true,
+            httpOnly: true,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'strict',
             maxAge: 1 * 24 * 60 * 60 * 1000,
         });
         res.cookie('refreshToken', refreshToken, {
-            httpsOnly: true,
+            httpOnly: true,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -147,15 +147,15 @@ export const logout = async (req, res, next) => {
         }
         // Clear both cookies
         res.cookie('token', '', {
-            httpsOnly: true,
+            httpOnly: true,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'strict',
             maxAge: 0,
         });
         res.cookie('refreshToken', '', {
-            httpsOnly: true,
+            httpOnly: true,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'strict',
             maxAge: 0,
         });
 
@@ -212,13 +212,13 @@ export const refreshToken = async (req, res, next) => {
         res.cookie('token', newAccessToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'strict',
             maxAge: 1 * 24 * 60 * 60 * 10000,
         });
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
