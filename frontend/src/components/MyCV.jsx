@@ -5,6 +5,7 @@ import Navbar from "./shared/Navbar";
 import { motion } from "framer-motion";
 import { Switch } from "../components/ui/Switch";
 import * as Dialog from "@radix-ui/react-dialog";
+import {USER_API_END_POINT} from "../utils/constant"
 
 const MyCV = () => {
   const [cvList, setCvList] = useState([]);
@@ -14,13 +15,19 @@ const MyCV = () => {
 
   const fetchCVs = async () => {
     try {
-      const response = await axios.get("/api/cvs");
+      console.log("fetchCVs activated")
+      const response = await axios.get(`${USER_API_END_POINT}/cv`, {
+        withCredentials: true,
+      });
+            console.log(response.data)
       setCvList(response.data.cvs || []);
     } catch (error) {
-      toast.error("Failed to fetch CVs.");
+      toast.error("Không thể tải danh sách CV.");
       console.error(error);
     }
   };
+  
+  
 
   const handleUpload = async () => {
     if (!file) return toast.error("Vui lòng chọn file CV.");
@@ -41,8 +48,10 @@ const MyCV = () => {
   };
 
   useEffect(() => {
+    console.log("Fetching CVs...");
     fetchCVs();
   }, []);
+  
 
   return (
     <div>
@@ -74,21 +83,74 @@ const MyCV = () => {
       </div>
     ) : (
       <motion.ul className="grid grid-cols-1 gap-4">
-        {cvList.map((cv) => (
-          <motion.li
-            key={cv._id}
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            transition={{ duration: 0.3 }}
-            className="bg-gray-100 p-4 rounded flex justify-between items-center"
-          >
-            <a href={cv.url} target="_blank" rel="noopener noreferrer">
-              {cv.name}
-            </a>
-            <span className="text-sm text-gray-500">{cv.updatedAt?.slice(0, 10)}</span>
-          </motion.li>
-        ))}
+      {cvList.map((cv) => (
+  <motion.li
+    key={cv._id}
+    initial={{ opacity: 0, x: 100 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: -100 }}
+    transition={{ duration: 0.3 }}
+    className="bg-white p-4 rounded-lg shadow relative"
+  >
+    {/* Primary CV badge */}
+    {cv.isPrimary && (
+      <span className="absolute top-2 right-2 bg-blue-100 text-blue-600 text-xs font-semibold px-2 py-1 rounded-full">
+        ⭐ Đặt làm CV chính
+      </span>
+    )}
+
+    {/* CV avatar and title */}
+    <div className="flex items-center gap-4">
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/6596/6596121.png"
+        alt="CV avatar"
+        className="w-12 h-12 rounded-full"
+      />
+      <div>
+        <p className="text-lg font-semibold text-gray-800">
+          {cv.resumeOriginalName}
+        </p>
+        <p className="text-sm text-gray-500">
+          Cập nhật lần cuối{" "}
+          {new Date(cv.updatedAt).toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })}{" "}
+          {new Date(cv.updatedAt).toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+      </div>
+    </div>
+
+    {/* Action buttons */}
+    <div className="mt-4 flex justify-between items-center">
+      <div className="flex gap-2">
+        <a
+          href={cv.resume}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded"
+        >
+          📤 Chia sẻ
+        </a>
+        <a
+          href={cv.resume}
+          download
+          className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded"
+        >
+          ⬇ Tải xuống
+        </a>
+      </div>
+      <button className="text-red-500 hover:text-red-700">
+        🗑
+      </button>
+    </div>
+  </motion.li>
+))}
+
       </motion.ul>
     )}
     </div>

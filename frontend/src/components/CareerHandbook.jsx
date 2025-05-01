@@ -161,7 +161,7 @@ const CareerHandbook = () => {
       <h1 className="text-3xl md:text-5xl font-extrabold text-green-500 mb-4">
         Cẩm nang nghề nghiệp
       </h1>
-      <p className="text-white max-w-3xl mx-auto text-base text-green-900 md:text-lg">
+      <p className="text-green max-w-3xl mx-auto text-base text-green-900 md:text-lg">
         Khám phá thông tin hữu ích liên quan tới nghề nghiệp bạn quan tâm. Chia sẻ kinh nghiệm, kiến thức chuyên môn giúp bạn tìm được công việc phù hợp và phát triển bản thân.
       </p>
     </div>

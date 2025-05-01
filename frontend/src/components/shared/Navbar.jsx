@@ -10,7 +10,7 @@ import { USER_API_END_POINT } from '@/utils/constant';
 import { setUser } from '@/redux/authSlice';
 import { toast } from 'sonner';
 import logo from '../../assets/logo.png';
-import NavBarBanner from "../ui/navbar_banner"
+import NavBarBanner from "../ui/navbar_banner";
 
 const Navbar = () => {
     const { user } = useSelector(store => store.auth);
@@ -41,6 +41,7 @@ const Navbar = () => {
                     </div>
                     <div className='flex items-center gap-12'>
                         <ul className='flex font-medium items-center gap-5'>
+                            {/* Navigation Links */}
                             {
                                 user && user.role === 'recruiter' ? (
                                     <>
@@ -109,14 +110,22 @@ const Navbar = () => {
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Avatar className="cursor-pointer">
-                                            <AvatarImage src={user?.profile?.profilePhoto} alt="@shadcn" />
+                                            <AvatarImage 
+                                                src={user?.profile?.profilePhoto} 
+                                                alt="@shadcn" 
+                                                className="w-10 h-10 object-cover" // Set width and height
+                                            />
                                         </Avatar>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-80">
                                         <div className=''>
                                             <div className='flex gap-2 space-y-2'>
                                                 <Avatar className="cursor-pointer">
-                                                    <AvatarImage src={user?.profile?.profilePhoto} alt="@shadcn" />
+                                                    <AvatarImage 
+                                                        src={user?.profile?.profilePhoto} 
+                                                        alt="@shadcn" 
+                                                        className="w-10 h-10 object-cover" // Set width and height
+                                                    />
                                                 </Avatar>
                                                 <div>
                                                     <h4 className='font-medium'>{user?.fullname}</h4>
