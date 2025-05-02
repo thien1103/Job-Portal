@@ -445,6 +445,7 @@ export const uploadCV = async (req, res, next) => {
             success: true,
         });
     } catch (error) {
+        console.log("error uploadCV controller: ", error);
         next(error);
     }
 };

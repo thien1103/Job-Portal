@@ -47,3 +47,14 @@ export const isRecruiter = async (req, res, next) => {
         next(error);
     }
 };
+
+export const isAdmin = async (req, res, next) => {
+    try {
+        if (req.user.role !== "admin") {
+            throw createError("Access denied. Admin role required", 403);
+        }
+        next();
+    } catch (error) {
+        next(error);
+    }
+};
