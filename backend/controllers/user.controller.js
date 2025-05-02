@@ -418,6 +418,12 @@ export const uploadCV = async (req, res, next) => {
             throw createError("PDF file is required", 400);
         }
 
+        const fileExtension = path.extname(file.originalname).toLowerCase();
+        if (fileExtension !== ".pdf") {
+            throw createError("Only PDF files are supported", 400);
+        }
+
+        const originalName = Buffer.from(file.originalname, "utf-8").toString("utf-8");
         const title = path.basename(file.originalname, ".pdf");
         if (!title) {
             throw createError("Invalid file name", 400);
