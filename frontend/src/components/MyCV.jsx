@@ -51,20 +51,28 @@ const MyCV = () => {
     setOpenConfirmDialog(true);
   };
 
+  // Utility to remove all accents and non-ASCII chars
+function makeAsciiOnly(str) {
+  return str
+    .normalize("NFD")               // decompose combined chars
+    .replace(/[\u0300-\u036f]/g, "")// strip diacritics
+    .replace(/[^\x00-\x7F]/g, "")   // strip any leftover non-ASCII
+}
+
 const handleUpload = async () => {
   if (!file) {
     toast.error("Vui lòng chọn file CV.");
     return;
   }
 
-  const formData = new FormData();
-  // Pass the file directly with its original name, relying on the browser to handle UTF-8 encoding
-  formData.append("file", file, file.name);
+  // Turn "Hạo Thiên CV.pdf" into "Hao Thien CV.pdf"
+  const safeName = makeAsciiOnly(file.name);
 
-  console.log("Uploading CV:");
-  console.log(" • Name:", file.name);
-  console.log(" • Size:", file.size);
-  console.log(" • Type:", file.type);
+  const normalizedFile = new File([file], safeName, { type: file.type });
+  const formData = new FormData();
+  formData.append("file", normalizedFile);
+
+  console.log("Uploading CV as:", safeName);
 
   try {
     const { data } = await axios.post(
@@ -72,22 +80,22 @@ const handleUpload = async () => {
       formData,
       { withCredentials: true }
     );
-    console.log("Backend response:", data);
-
     toast.success(data.message || "Tải lên thành công");
     fetchCVs();
     setOpenUploadModal(false);
     setFile(null);
   } catch (error) {
     if (error.response) {
-      console.error("Backend error:", error.response.data);
       toast.error(error.response.data.message || "Tải lên thất bại.");
     } else {
-      console.error("Network error:", error);
       toast.error("Tải lên thất bại.");
     }
+    console.error(error);
   }
 };
+
+  
+  
 
   const handleSetPrimaryCV = async (cvId) => {
     try {
