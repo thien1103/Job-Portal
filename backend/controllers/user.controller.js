@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import path from "path";
+import axios from "axios";
 
 import { User } from "../models/user.model.js";
 import { CV } from "../models/cv.model.js";
@@ -432,6 +433,7 @@ export const uploadCV = async (req, res, next) => {
         const fileUri = getDataUri(file);
         const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
             resource_type: "raw",
+            format: "pdf"
         });
 
         const cvData = {
@@ -495,6 +497,55 @@ export const getCV = async (req, res, next) => {
         });
     } catch (error) {
         next(error);
+    }
+};
+
+export const downloadCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { cvId } = req.params;
+
+        const cv = await CV.findOne({ _id: cvId, userId });
+        if (!cv) {
+            throw createError("CV not found or you are not authorized to download it", 404);
+        }
+
+        const fileExtension = path.extname(cv.resumeOriginalName).toLowerCase();
+        if (fileExtension !== ".pdf") {
+            throw createError("Only PDF files are supported for download", 400);
+        }
+
+        const response = await axios({
+            url: cv.resume,
+            method: "GET",
+            responseType: "stream",
+            timeout: 10000,
+        });
+
+        const contentType = response.headers["content-type"];
+
+        if (!contentType || (!contentType.includes("application/pdf") && !contentType.includes("application/octet-stream"))) {
+            throw createError(`Invalid file type: ${contentType || "unknown"}`, 400);
+        }
+
+        res.setHeader("Content-Disposition", `attachment; filename="${cv.resumeOriginalName}"`);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Length", response.headers["content-length"] || 0);
+
+
+        response.data.pipe(res);
+
+    } catch (error) {
+        console.error("Error in downloadCV:", error.message);
+        if (error.response) {
+            next(createError(`Failed to fetch file from Cloudinary: ${error.response.statusText}`, error.response.status));
+        } else if (error.name === "MongoError") {
+            next(createError("Database error while retrieving CV", 500));
+        } else if (error.code === "ECONNABORTED") {
+            next(createError("Request to Cloudinary timed out", 504));
+        } else {
+            next(error);
+        }
     }
 };
 

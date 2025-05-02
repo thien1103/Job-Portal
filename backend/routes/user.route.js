@@ -1,7 +1,7 @@
 import express from "express";
 import {
     login, logout, refreshToken, register, updateProfile, changePassword, getProfile,
-    uploadCV, getCVs, getCV, updateCV, deleteCV, setPrimaryCV, setProfilePublic,
+    uploadCV, getCVs, getCV, updateCV, deleteCV, downloadCV, setPrimaryCV, setProfilePublic,
     addExperience, getExperience, updateExperience, deleteExperience,
     addEducation, getEducation, updateEducation, deleteEducation,
     getApplicantProfile, getApplicantPrimaryCV,
@@ -37,6 +37,7 @@ router.get("/cv/:cvId", isAuthenticated, getCV);
 router.patch("/cv/:cvId", isAuthenticated, singleUpload, updateCV);
 router.delete("/cv/:cvId", isAuthenticated, deleteCV);
 router.patch("/cv/:cvId/primary", isAuthenticated, setPrimaryCV);
+router.get("/cv/download/:cvId", isAuthenticated, downloadCV);
 
 router.get("/applicant/:userId/profile", isAuthenticated, isRecruiter, getApplicantProfile);
 router.get("/applicant/:userId/primary-cv", isAuthenticated, isRecruiter, getApplicantPrimaryCV);
