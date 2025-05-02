@@ -1,5 +1,5 @@
 import { User } from "../models/user.model.js";
-import { RefreshToken } from "../models/refreshToken.model.js";
+import { RefreshToken } from "../models/token.model.js";
 import { Job } from "../models/job.model.js";
 import { Company } from "../models/company.model.js";
 import { Application } from "../models/application.model.js";
