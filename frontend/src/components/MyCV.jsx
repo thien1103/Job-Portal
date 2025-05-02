@@ -51,29 +51,43 @@ const MyCV = () => {
     setOpenConfirmDialog(true);
   };
 
-  const handleUpload = async () => {
-    if (!file) return toast.error("Vui lòng chọn file CV.");
-    const formData = new FormData();
-    formData.append("cv", file);
+const handleUpload = async () => {
+  if (!file) {
+    toast.error("Vui lòng chọn file CV.");
+    return;
+  }
 
-    try {
-      const response = await axios.post(
-        `${USER_API_END_POINT}/cv/upload`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
-        }
-      );
-      toast.success(response.data.message || "Tải lên thành công");
-      fetchCVs();
-      setOpenUploadModal(false);
-      setFile(null); // Clear selected file after successful upload
-    } catch (error) {
+  const formData = new FormData();
+  // Pass the file directly with its original name, relying on the browser to handle UTF-8 encoding
+  formData.append("file", file, file.name);
+
+  console.log("Uploading CV:");
+  console.log(" • Name:", file.name);
+  console.log(" • Size:", file.size);
+  console.log(" • Type:", file.type);
+
+  try {
+    const { data } = await axios.post(
+      `${USER_API_END_POINT}/cv/upload`,
+      formData,
+      { withCredentials: true }
+    );
+    console.log("Backend response:", data);
+
+    toast.success(data.message || "Tải lên thành công");
+    fetchCVs();
+    setOpenUploadModal(false);
+    setFile(null);
+  } catch (error) {
+    if (error.response) {
+      console.error("Backend error:", error.response.data);
+      toast.error(error.response.data.message || "Tải lên thất bại.");
+    } else {
+      console.error("Network error:", error);
       toast.error("Tải lên thất bại.");
-      console.error(error);
     }
-  };
+  }
+};
 
   const handleSetPrimaryCV = async (cvId) => {
     try {

@@ -15,6 +15,7 @@ import PostJob from './components/admin/PostJob'
 import Applicants from './components/admin/Applicants'
 import ProtectedRoute from './components/admin/ProtectedRoute'
 import MyCV from './components/MyCV'
+import ProtectedApplicantRoute from "./components/ProtectedApplicantRoute";
 
 const appRouter = createBrowserRouter([
   {
@@ -47,7 +48,11 @@ const appRouter = createBrowserRouter([
   },
   {
     path: "/myCV",
-    element: <MyCV />
+    element: (
+      <ProtectedApplicantRoute>
+        <MyCV />
+      </ProtectedApplicantRoute>
+    ),
   },
 
   // ADMIN SECTION
