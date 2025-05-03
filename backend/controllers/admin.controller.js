@@ -88,7 +88,92 @@ export const getStatistics = async (req, res, next) => {
         const roleStats = userStats.reduce((acc, stat) => {
             acc[stat._id] = stat.count;
             return acc;
-        }, { applicant: 0, recruiter: 0, admin: 0 });
+        }, { applicant: 0, recruiter: 0 });
+
+        
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const usersByDay = await User.aggregate([
+            {
+                $match: { createdAt: { $gte: thirtyDaysAgo } },
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $sort: { _id: 1 },
+            },
+        ]);
+
+        const twelveWeeksAgo = new Date();
+        twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
+        const usersByWeek = await User.aggregate([
+            {
+                $match: { createdAt: { $gte: twelveWeeksAgo } },
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y-%U", date: "$createdAt" }, 
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $sort: { _id: 1 },
+            },
+        ]);
+
+        
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+        const usersByMonth = await User.aggregate([
+            {
+                $match: { createdAt: { $gte: twelveMonthsAgo } },
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y-%m", date: "$createdAt" },
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $sort: { _id: 1 },
+            },
+        ]);
+
+        const fiveYearsAgo = new Date();
+        fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+        const usersByYear = await Job.aggregate([
+            {
+                $match: { createdAt: { $gte: fiveYearsAgo } },
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y", date: "$createdAt" },
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $sort: { _id: 1 },
+            },
+        ]);
+
+       
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const newJobsLast7Days = await Job.countDocuments({
+            createdAt: { $gte: sevenDaysAgo },
+        });
 
         return res.status(200).json({
             message: "Statistics retrieved successfully",
@@ -97,7 +182,14 @@ export const getStatistics = async (req, res, next) => {
                 totalJobs,
                 totalCompanies,
                 totalApplications,
-                roleStats
+                roleStats,
+                newUsers: {
+                    byDay: usersByDay.map(stat => ({ date: stat._id, count: stat.count })),
+                    byWeek: usersByWeek.map(stat => ({ week: stat._id, count: stat.count })),
+                    byMonth: usersByMonth.map(stat => ({ month: stat._id, count: stat.count })),
+                    byYear: usersByYear.map(stat => ({ year: stat._id, count: stat.count }))
+                },
+                newJobsLast7Days,
             },
             success: true
         });
@@ -127,11 +219,59 @@ export const getAllUsers = async (req, res, next) => {
             .skip(skip)
             .limit(limit);
 
+        
+        if (!users || users.length === 0) {
+            throw createError("No users found", 404);
+        }
         const total = await User.countDocuments(query);
 
         return res.status(200).json({
             message: "Users retrieved for deletion",
             users,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(total / limit)
+            },
+            success: true
+        });
+    } catch (error) {
+        console.error("Error in getUsersForDeletion:", error.message);
+        next(error);
+    }
+};
+
+export const getAllCompanies = async (req, res, next) => {
+    try {
+        const { keyword, page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let query = {};
+        if (keyword) {
+            query = {
+                $or: [
+                    { name: { $regex: keyword, $options: "i" } },
+                    { description: { $regex: keyword, $options: "i" } }
+                ]
+            };
+        }
+
+        const companies = await Company.find(query)
+            .select("name createdAt updatedAt")
+            .populate("userId", "email fullname")
+            .skip(skip)
+            .limit(limit);
+        
+        if (!companies || companies.length === 0) {
+            throw createError("No companies found", 404);
+        }
+
+        const total = await Company.countDocuments(query);
+
+        return res.status(200).json({
+            message: "Users retrieved for deletion",
+            companies,
             pagination: {
                 total,
                 page: parseInt(page),

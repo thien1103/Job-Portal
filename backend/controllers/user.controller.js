@@ -43,6 +43,11 @@ export const register = async (req, res, next) => {
             throw createError('User already exists with this email', 400);
         }
 
+        const existingPhone = await User.findOne({ phoneNumber });
+        if (existingPhone) {
+            throw createError('Phone number already in use', 400);
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = await User.create({
@@ -286,6 +291,13 @@ export const updateProfile = async (req, res, next) => {
             const existingUser = await User.findOne({ email });
             if (existingUser) {
                 throw createError("Email already in use", 400);
+            }
+        }
+
+        if (phoneNumber !== undefined && phoneNumber && phoneNumber !== user.phoneNumber) {
+            const existingPhone = await User.findOne({ phoneNumber });
+            if (existingPhone && existingPhone._id.toString() !== userId.toString()) {
+                throw createError("Phone number already in use", 400);
             }
         }
 
