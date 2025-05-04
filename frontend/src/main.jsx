@@ -7,7 +7,10 @@ import { Provider } from 'react-redux'
 import store from './redux/store.js'
 import { persistStore } from 'redux-persist'
 import { PersistGate } from 'redux-persist/integration/react'
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faStar } from '@fortawesome/free-solid-svg-icons';
 
+library.add(faStar);
 const persistor = persistStore(store);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

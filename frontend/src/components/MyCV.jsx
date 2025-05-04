@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Switch } from "../components/ui/Switch";
 import * as Dialog from "@radix-ui/react-dialog";
 import { USER_API_END_POINT } from "../utils/constant";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const MyCV = () => {
   const [cvList, setCvList] = useState([]);
@@ -18,6 +19,7 @@ const MyCV = () => {
   const [newTitle, setNewTitle] = useState("");
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isProfilePublic, setIsProfilePublic] = useState(false); // New state for profile public status
+  const [hoveredCV, setHoveredCV] = useState(null); // State to track hovered CV
 
   const fetchCVs = async () => {
     try {
@@ -208,21 +210,36 @@ const MyCV = () => {
                         backgroundRepeat: "no-repeat",
                       }}
                     >
-                      {/* Button to set Primary CV */}
                       <button
                         onClick={() => handleSetPrimaryCV(cv._id)}
-                        className="absolute top-2 right-2 bg-white text-black text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 border transition duration-200 hover:bg-black hover:text-white"
+                        className="absolute top-2 right-2 bg-white text-[#3b3b3b] text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 border transition duration-200 hover:bg-[#3b3b3b] group"
                       >
-                        <span className="transition duration-200 group-hover:text-yellow-900">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 fill-current"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                          </svg>
-                        </span>
-                        Đặt làm CV chính
+                        {isCVPrimary(cv._id) ? (
+                          <>
+                            <FontAwesomeIcon
+                              icon="star"
+                              className="h-4 w-4 text-yellow-500"
+                            />
+                            <span className="text-[#3b3b3b] group-hover:hidden">
+                              CV chính
+                            </span>
+                            <span className="text-white hidden group-hover:inline">
+                              Hủy CV chính
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="transition duration-200 group-hover:text-yellow-500">
+                              <FontAwesomeIcon
+                                icon="star"
+                                className="h-4 w-4"
+                              />
+                            </span>
+                            <span className="transition duration-200 group-hover:text-white">
+                              Đặt làm CV chính
+                            </span>
+                          </>
+                        )}
                       </button>
 
                       {/* CV avatar and title */}
@@ -242,12 +259,6 @@ const MyCV = () => {
                             >
                               {cv.resumeOriginalName}
                             </a>
-                            {/* Is Primary CV badge */}
-                            {isCVPrimary(cv._id) && (
-                              <span className="text-yellow-500 text-xl ml-4">
-                                ⭐
-                              </span>
-                            )}
                           </div>
                           <p className="text-sm text-gray-500">
                             Cập nhật lần cuối{" "}
@@ -330,11 +341,8 @@ const MyCV = () => {
                             onClick={async (e) => {
                               e.preventDefault();
                               try {
-                                // Fetch the PDF file
                                 const response = await fetch(cv.resume);
                                 const blob = await response.blob();
-
-                                // Show the file picker dialog
                                 const handle = await window.showSaveFilePicker({
                                   suggestedName: "resume.pdf",
                                   types: [
@@ -344,13 +352,10 @@ const MyCV = () => {
                                     },
                                   ],
                                 });
-
-                                // Write the file to disk
                                 const writable = await handle.createWritable();
                                 await writable.write(blob);
                                 await writable.close();
                               } catch (err) {
-                                // Handle cancellation or errors
                                 if (err.name !== "AbortError") {
                                   console.error("Error saving file:", err);
                                 }
@@ -420,20 +425,6 @@ const MyCV = () => {
 
         {/* Right section */}
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
-          {/* <h3 className="font-bold text-gray-800 mb-2">Trạng thái tìm việc</h3>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">
-              {jobSeekingStatus ? "Đang bật" : "Đang tắt"}
-            </span>
-            <Switch
-              checked={jobSeekingStatus}
-              onCheckedChange={setJobSeekingStatus}
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Nếu bạn tắt, nhà tuyển dụng sẽ không thể liên hệ với bạn qua hồ sơ.
-          </p> */}
-
           <h3 className="font-bold text-gray-800 mt-4 mb-2">
             Trạng thái hồ sơ
           </h3>

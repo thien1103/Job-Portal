@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { APPLICATION_API_END_POINT, JOB_API_END_POINT, COMPANY_API_END_POINT } from '@/utils/constant';
 import { setSingleJob } from '@/redux/jobSlice';
@@ -19,6 +19,7 @@ const JobDescription = () => {
   const params = useParams();
   const jobId = params.id;
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const applyJobHandler = async () => {
     try {
@@ -58,7 +59,7 @@ const JobDescription = () => {
 
   useEffect(() => {
     const fetchCompanyData = async () => {
-      if (singleJob?.company) {
+      if (user && singleJob?.company) {
         try {
           console.log('Fetching Company Data');
           const res = await axios.get(`${COMPANY_API_END_POINT}/${singleJob.company}`, { withCredentials: true });
@@ -73,7 +74,19 @@ const JobDescription = () => {
       }
     };
     fetchCompanyData();
-  }, [singleJob]);
+  }, [user, singleJob]);
+
+  // Handle Review Company button click
+  const handleReviewCompany = () => {
+    if (user) {
+      // User is logged in, open the company website
+      window.open(companyData?.website, '_blank');
+    } else {
+      // User is not logged in, show toast and redirect to /login
+      toast.info('Please log in to review the company.');
+      navigate('/login');
+    }
+  };
 
   // Render loading state if singleJob is not yet loaded
   if (!singleJob) {
@@ -102,15 +115,14 @@ const JobDescription = () => {
               disabled={isApplied || !user}
               className={`rounded-lg flex-1 ${isApplied ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
             >
-            <img src="https://cdn-icons-png.flaticon.com/128/561/561226.png" className='w-[18px] h-[18px] mr-4'/>
+              <img src="https://cdn-icons-png.flaticon.com/128/561/561226.png" className='w-[18px] h-[18px] mr-4'/>
               {isApplied ? 'Already Applied' : 'Apply Now'}
             </Button>
             <Button
               variant="outline"
               className='rounded-lg flex-1 border-gray-300 text-gray-700 hover:bg-gray-100'
             >
-                        <img src="https://cdn-icons-png.flaticon.com/128/4675/4675168.png" className='w-[18px] h-[18px] mr-4'/>
-
+              <img src="https://cdn-icons-png.flaticon.com/128/4675/4675168.png" className='w-[18px] h-[18px] mr-4'/>
               Save Job
             </Button>
           </div>
@@ -152,9 +164,8 @@ const JobDescription = () => {
               <h1 className='font-bold text-xl border-b-2 border-b-gray-300 pb-2 mb-4'>General Information</h1>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <div className='flex items-center gap-2'>
-                  <span className='text-green-600 '>
-                  <img src="https://cdn-icons-png.flaticon.com/128/10316/10316527.png" className='w-[40px] h-[40px] mr-4'/>
-
+                  <span className='text-green-600'>
+                    <img src="https://cdn-icons-png.flaticon.com/128/10316/10316527.png" className='w-[40px] h-[40px] mr-4'/>
                   </span>
                   <div>
                     <h2 className='font-bold'>Level:</h2>
@@ -163,8 +174,7 @@ const JobDescription = () => {
                 </div>
                 <div className='flex items-center gap-2'>
                   <span className='text-green-600'>
-                  <img src="https://cdn-icons-png.flaticon.com/128/1769/1769059.png" className='w-[40px] h-[40px] mr-4'/>
-
+                    <img src="https://cdn-icons-png.flaticon.com/128/1769/1769059.png" className='w-[40px] h-[40px] mr-4'/>
                   </span>
                   <div>
                     <h2 className='font-bold'>Position(s):</h2>
@@ -173,7 +183,7 @@ const JobDescription = () => {
                 </div>
                 <div className='flex items-center gap-2'>
                   <span className='text-green-600'>
-                  <img src="https://cdn-icons-png.flaticon.com/128/639/639343.png" className='w-[40px] h-[40px] mr-4'/>
+                    <img src="https://cdn-icons-png.flaticon.com/128/639/639343.png" className='w-[40px] h-[40px] mr-4'/>
                   </span>
                   <div>
                     <h2 className='font-bold'>Job Type:</h2>
@@ -182,7 +192,7 @@ const JobDescription = () => {
                 </div>
                 <div className='flex items-center gap-2'>
                   <span className='text-green-600'>
-                  <img src="https://cdn-icons-png.flaticon.com/128/2838/2838590.png" className='w-[40px] h-[40px] mr-4'/>
+                    <img src="https://cdn-icons-png.flaticon.com/128/2838/2838590.png" className='w-[40px] h-[40px] mr-4'/>
                   </span>
                   <div>
                     <h2 className='font-bold'>Working Time:</h2>
@@ -197,7 +207,7 @@ const JobDescription = () => {
           <div className='md:col-span-1'>
             <div className='bg-white shadow-lg rounded-lg p-6 sticky top-6'>
               <h1 className='font-semibold text-xl border-b-2 border-b-gray-300 pb-2 mb-4'>Company</h1>
-              {companyData ? (
+              {user && companyData ? (
                 <div className='space-y-4'>
                   <div className='flex items-center gap-2'>
                     <img
@@ -205,39 +215,30 @@ const JobDescription = () => {
                       alt="Company Logo"
                       className='w-10 h-10 rounded-full'
                     />
-                    <h2 className='font-bold text-lg  line-clamp-2'>{companyData.name || 'N/A'}</h2>
+                    <h2 className='font-bold text-lg line-clamp-2'>{companyData.name || 'N/A'}</h2>
                   </div>
                   <div>
                     <p className='text-gray-600 line-clamp-1 flex flex-row items-center'>
-                    <img src="https://cdn-icons-png.flaticon.com/128/9946/9946341.png" className='w-[18px] h-[18px] mr-2'/> 
-                    Phone: {companyData.phone || 'N/A'}</p>
+                      <img src="https://cdn-icons-png.flaticon.com/128/9946/9946341.png" className='w-[18px] h-[18px] mr-2'/>
+                      Phone: {companyData.contactInfo?.phone || 'N/A'}
+                    </p>
                     <p className='text-gray-600 line-clamp-1 flex flex-row items-center'>
-                    <img src="https://cdn-icons-png.flaticon.com/128/2642/2642502.png" className='w-[18px] h-[18px] mr-2'/> 
-                    Location: {companyData.location || 'N/A'}</p>
-                    {/* <p className='text-gray-600 line-clamp-1 flex flex-row items-center'>
-                    <img src="https://cdn-icons-png.flaticon.com/128/3687/3687407.png" className='w-[18px] h-[18px] mr-2'/> 
-                     Website:
-                      <a
-                        href={companyData.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className='text-blue-600 hover:underline line-clamp-1'
-                      >
-                        {companyData.website || 'N/A'}
-                      </a>
-                    </p> */}
+                      <img src="https://cdn-icons-png.flaticon.com/128/2642/2642502.png" className='w-[18px] h-[18px] mr-2'/>
+                      Location: {companyData.location || 'N/A'}
+                    </p>
                     <p className='text-gray-600 mt-2 line-clamp-4'>{companyData.description || 'No description available'}</p>
                   </div>
                   <Button
                     variant="outline"
-                    className='w-full border-gray-300 text-gray-700 hover:bg-gray-100'
-                    onClick={() => window.open(companyData.website, '_blank')}>
-                     <img src="https://cdn-icons-png.flaticon.com/128/455/455792.png" className='w-[18px] h-[18px] mr-2'/> 
-                    Review Company
+                    className='w-full border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center'
+                    onClick={handleReviewCompany}
+                  >
+                    <img src="https://cdn-icons-png.flaticon.com/128/455/455792.png" className='w-[18px] h-[18px] mr-2'/>
+                    {user ? 'Review Company' : 'Login to Review Company'}
                   </Button>
                 </div>
               ) : (
-                <p className='text-gray-600'>Loading company information...</p>
+                <p className='text-gray-600 flex flex-row'>Please <a className='font-semibold ml-1 mr-1 text-green-600' href="/login">login</a> to review company info</p>
               )}
             </div>
           </div>

@@ -79,7 +79,7 @@ const Job = ({ job }) => {
         <Badge className="text-[#F83002] font-bold" variant="ghost">
           {job?.jobType}
         </Badge>
-        <Badge className="text-[#7209b7] font-bold" variant="ghost">
+        <Badge className="text-[#7209b7] font-bold line-clamp-1" variant="ghost">
           {job?.salary?.toLocaleString("vi-VN")} VND
         </Badge>
       </div>
