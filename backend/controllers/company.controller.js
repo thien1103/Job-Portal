@@ -33,13 +33,21 @@ export const registerCompany = async (req, res, next) => {
             throw createError("You can only register one company", 400);
         }
 
+        let logo = {};
+        if (req.file) {
+            const fileUri = getDataUri(req.file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            companyPhoto = cloudResponse.secure_url;
+        };
+
         const company = await Company.create({
             name: companyName,
             userId,
             description: finalDescription,
             website,
             location,
-            contactInfo: { email: contactEmail, phone: contactPhone }
+            contactInfo: { email: contactEmail, phone: contactPhone },
+            logo
         });
 
         const companyResponse = await Company.findById(company._id).select('-userId');
@@ -157,9 +165,15 @@ export const updateCompany = async (req, res, next) => {
             description: finalDescription,
             website,
             location,
-            logo,
-            contactInfo: { email: contactEmail, phone: contactPhone }
+            logo
         };
+
+        if (contactEmail !== undefined || contactPhone !== undefined) {
+            updateData.contactInfo = {
+                email: contactEmail !== undefined ? contactEmail : company.contactInfo.email,
+                phone: contactPhone !== undefined ? contactPhone : company.contactInfo.phone
+            };
+        }
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
         const updatedCompany = await Company.findByIdAndUpdate(companyId, updateData, { new: true }).select('-userId');
@@ -172,7 +186,11 @@ export const updateCompany = async (req, res, next) => {
             message: "Company information updated",
             company: {
                 ...updatedCompany._doc,
-                description: descriptionLines
+                description: descriptionLines,
+                contactInfo: {
+                    email: updatedCompany.contactInfo.email || "",
+                    phone: updatedCompany.contactInfo.phone || ""
+                }
             },
             success: true
         });
