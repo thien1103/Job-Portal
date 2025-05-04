@@ -52,50 +52,47 @@ const MyCV = () => {
   };
 
   // Utility to remove all accents and non-ASCII chars
-function makeAsciiOnly(str) {
-  return str
-    .normalize("NFD")               // decompose combined chars
-    .replace(/[\u0300-\u036f]/g, "")// strip diacritics
-    .replace(/[^\x00-\x7F]/g, "")   // strip any leftover non-ASCII
-}
-
-const handleUpload = async () => {
-  if (!file) {
-    toast.error("Vui lòng chọn file CV.");
-    return;
+  function makeAsciiOnly(str) {
+    return str
+      .normalize("NFD") // decompose combined chars
+      .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+      .replace(/[^\x00-\x7F]/g, ""); // strip any leftover non-ASCII
   }
 
-  // Turn "Hạo Thiên CV.pdf" into "Hao Thien CV.pdf"
-  const safeName = makeAsciiOnly(file.name);
-
-  const normalizedFile = new File([file], safeName, { type: file.type });
-  const formData = new FormData();
-  formData.append("file", normalizedFile);
-
-  console.log("Uploading CV as:", safeName);
-
-  try {
-    const { data } = await axios.post(
-      `${USER_API_END_POINT}/cv/upload`,
-      formData,
-      { withCredentials: true }
-    );
-    toast.success(data.message || "Tải lên thành công");
-    fetchCVs();
-    setOpenUploadModal(false);
-    setFile(null);
-  } catch (error) {
-    if (error.response) {
-      toast.error(error.response.data.message || "Tải lên thất bại.");
-    } else {
-      toast.error("Tải lên thất bại.");
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error("Vui lòng chọn file CV.");
+      return;
     }
-    console.error(error);
-  }
-};
 
-  
-  
+    // Turn "Hạo Thiên CV.pdf" into "Hao Thien CV.pdf"
+    const safeName = makeAsciiOnly(file.name);
+
+    const normalizedFile = new File([file], safeName, { type: file.type });
+    const formData = new FormData();
+    formData.append("file", normalizedFile);
+
+    console.log("Uploading CV as:", safeName);
+
+    try {
+      const { data } = await axios.post(
+        `${USER_API_END_POINT}/cv/upload`,
+        formData,
+        { withCredentials: true }
+      );
+      toast.success(data.message || "Tải lên thành công");
+      fetchCVs();
+      setOpenUploadModal(false);
+      setFile(null);
+    } catch (error) {
+      if (error.response) {
+        toast.error(error.response.data.message || "Tải lên thất bại.");
+      } else {
+        toast.error("Tải lên thất bại.");
+      }
+      console.error(error);
+    }
+  };
 
   const handleSetPrimaryCV = async (cvId) => {
     try {
@@ -237,9 +234,14 @@ const handleUpload = async () => {
                         />
                         <div className="flex flex-col text-left">
                           <div className="flex flex-row items-center">
-                            <p className="text-lg font-semibold text-gray-800">
+                            <a
+                              href={cv.resume}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-lg font-semibold text-gray-800 hover:underline"
+                            >
                               {cv.resumeOriginalName}
-                            </p>
+                            </a>
                             {/* Is Primary CV badge */}
                             {isCVPrimary(cv._id) && (
                               <span className="text-yellow-500 text-xl ml-4">
@@ -324,9 +326,36 @@ const handleUpload = async () => {
                           </a>
 
                           <a
-                            href={cv.resume}
-                            download
-                            className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded"
+                            className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded cursor-pointer"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                // Fetch the PDF file
+                                const response = await fetch(cv.resume);
+                                const blob = await response.blob();
+
+                                // Show the file picker dialog
+                                const handle = await window.showSaveFilePicker({
+                                  suggestedName: "resume.pdf",
+                                  types: [
+                                    {
+                                      description: "PDF Files",
+                                      accept: { "application/pdf": [".pdf"] },
+                                    },
+                                  ],
+                                });
+
+                                // Write the file to disk
+                                const writable = await handle.createWritable();
+                                await writable.write(blob);
+                                await writable.close();
+                              } catch (err) {
+                                // Handle cancellation or errors
+                                if (err.name !== "AbortError") {
+                                  console.error("Error saving file:", err);
+                                }
+                              }
+                            }}
                           >
                             <img
                               src="https://cdn-icons-png.flaticon.com/128/10741/10741247.png"
@@ -405,10 +434,12 @@ const handleUpload = async () => {
             Nếu bạn tắt, nhà tuyển dụng sẽ không thể liên hệ với bạn qua hồ sơ.
           </p> */}
 
-          <h3 className="font-bold text-gray-800 mt-4 mb-2">Trạng thái hồ sơ</h3>
+          <h3 className="font-bold text-gray-800 mt-4 mb-2">
+            Trạng thái hồ sơ
+          </h3>
           <div className="flex items-center justify-between">
             <span className="text-sm">
-              {isProfilePublic ?  "Riêng tư" : "Công khai"}
+              {isProfilePublic ? "Riêng tư" : "Công khai"}
             </span>
             <Switch
               checked={!isProfilePublic}
@@ -416,7 +447,8 @@ const handleUpload = async () => {
             />
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Nếu bạn đặt thành công khai, hồ sơ của bạn sẽ hiển thị cho mọi người.
+            Nếu bạn đặt thành công khai, hồ sơ của bạn sẽ hiển thị cho mọi
+            người.
           </p>
         </div>
       </div>

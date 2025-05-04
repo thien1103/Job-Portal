@@ -11,6 +11,8 @@ import { toast } from 'sonner'
 import { useDispatch, useSelector } from 'react-redux'
 import { setLoading, setUser } from '@/redux/authSlice'
 import { Loader2 } from 'lucide-react'
+import PasswordInput from '../ui/passwordInput'
+
 
 const Login = () => {
     const [input, setInput] = useState({
@@ -71,15 +73,15 @@ const Login = () => {
                     </div>
 
                     <div className='my-2'>
-                        <Label>Password</Label>
-                        <Input
-                            type="password"
-                            value={input.password}
-                            name="password"
-                            onChange={changeEventHandler}
-                            placeholder="patel@gmail.com"
-                        />
-                    </div>
+    <Label>Password</Label>
+    <PasswordInput
+        value={input.password}
+        name="password"
+        onChange={changeEventHandler}
+        placeholder="Enter your password"
+    />
+</div>
+
                     <div className='flex items-center justify-between'>
                         <RadioGroup className="flex items-center gap-4 my-5">
                             <div className="flex items-center space-x-2">

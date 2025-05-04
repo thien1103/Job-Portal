@@ -61,16 +61,16 @@ const careerGuidance = [
   {
     title: "Keyword finding",
     description: "Find a perfect keyword to showcase your skills.",
-    link: "https://mangools.com/blog/keyword-research/",
+    link: "https://outreachmonks.com/keyword-research-tips/",
     createdDate: "16/04/2025",
-    image: "https://mangools.com/blog/wp-content/uploads/2021/05/The-Keyword-Tripod-Rule.png", // Add image URL here
+    image: "https://outreachmonks.com/wp-content/uploads/2023/04/Keyword-Research-Tips-2.jpg.webp", // Add image URL here
   },
   {
     title: "Keyword finding",
     description: "Find a perfect keyword to showcase your skills.",
-    link: "https://mangools.com/blog/keyword-research/",
+    link: "https://altosagency.com/blog/article/9-easy-keyword-research-tips-to-make-your-content-unmissable",
     createdDate: "16/04/2025",
-    image: "https://mangools.com/blog/wp-content/uploads/2021/05/The-Keyword-Tripod-Rule.png", // Add image URL here
+    image: "https://cdn.prod.website-files.com/64baacfcb337b7364622226f/64fa37c1e3220872b6058075_Keyword%20Research%20Tips.png", // Add image URL here
   },
 ];
 
@@ -80,14 +80,14 @@ const industryKnowledge = [
     description: "Stay updated with the latest trends in the tech industry.",
     link: "https://www.startus-insights.com/innovators-guide/knowledge-economy-trends/",
     createdDate: "16/04/2025",
-    image: "https://www.startus-insights.com/wp-content/uploads/2023/06/Knowledge-Economy-Startups-TrendResearch-InnovationMap-StartUs-Insights-noresize-1.png", // Add image URL here
+    image: "https://storage.timviec365.vn/timviec365/pictures/images_12_2021/kien-thuc-chuyen-mon.jpg", // Add image URL here
   },
   {
     title: "Tech Industry Trends 2023",
     description: "Stay updated with the latest trends in the tech industry.",
-    link: "https://www.startus-insights.com/innovators-guide/knowledge-economy-trends/",
+    link: "https://huongnghiep.hocmai.vn/1-chuyen-nganh-la-gi-tranh-cam-bay-ve-nganh-va-chuyen-nganh-trong-tuyen-sinh/",
     createdDate: "16/04/2025",
-    image: "https://www.startus-insights.com/wp-content/uploads/2023/06/Knowledge-Economy-Startups-TrendResearch-InnovationMap-StartUs-Insights-noresize-1.png", // Add image URL here
+    image: "https://huongnghiep.hocmai.vn/wp-content/uploads/2021/11/Ng%C3%A0nh-.jpg", // Add image URL here
   },
 ];
 
