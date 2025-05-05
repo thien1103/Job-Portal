@@ -7,14 +7,14 @@ const NavBarBanner = () => {
   const { user } = useSelector((state) => state.auth);
 
   // Default for applicants / anonymous
-  let promptText = 'Bạn đã sẵn sàng để nhận được những cơ hội việc làm tốt nhất?';
-  let buttonText = 'Tải lên CV của bạn';
+  let promptText = 'Are you ready to receive the best job opportunities?';
+  let buttonText = 'Upload your CV now';
   let buttonLink = '/myCV';
 
   // Override for recruiters
   if (user?.role === 'recruiter') {
-    promptText = 'Bạn đã sẵn sàng tìm kiếm những ứng viên tài năng?';
-    buttonText = 'Đăng tuyển ngay bây giờ';
+    promptText = 'Are you ready to search for talented candidates?';
+    buttonText = 'Post your job now';
     buttonLink = '/admin/jobs';
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from "react";
 import {
   Table,
   TableBody,
@@ -7,33 +7,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../ui/table'
-import { Avatar, AvatarImage } from '../ui/avatar'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { Edit2, MoreHorizontal } from 'lucide-react'
-import { useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+} from "../ui/table";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Edit2, MoreHorizontal } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 const CompaniesTable = () => {
-  const { companies = [], searchCompanyByText = '' } = useSelector(
+  console.log("CompaniesTable rendering");
+  const { companies = [], searchCompanyByText = "" } = useSelector(
     (store) => store.company
-  )
-  const [filterCompany, setFilterCompany] = useState([])
-  const navigate = useNavigate()
+  );
 
-  useEffect(() => {
-    // Ensure companies is always an array
-    const baseList = Array.isArray(companies) ? companies : []
+  const navigate = useNavigate();
 
-    const filtered = baseList.filter((company) => {
-      if (!searchCompanyByText) return true
-      return company.name
-        .toLowerCase()
-        .includes(searchCompanyByText.toLowerCase())
-    })
+  // Compute filtered companies directly in render
+  const filteredCompanies = Array.isArray(companies)
+    ? companies.filter((company) => {
+        if (!searchCompanyByText) return true;
+        return company.name
+          .toLowerCase()
+          .includes(searchCompanyByText.toLowerCase());
+      })
+    : [];
 
-    setFilterCompany(filtered)
-  }, [companies, searchCompanyByText])
+  console.log("Filtered companies:", filteredCompanies);
 
   return (
     <div>
@@ -48,7 +47,7 @@ const CompaniesTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filterCompany.map((company) => (
+          {filteredCompanies.map((company) => (
             <TableRow key={company._id}>
               <TableCell>
                 <Avatar>
@@ -82,7 +81,7 @@ const CompaniesTable = () => {
         </TableBody>
       </Table>
     </div>
-  )
-}
+  );
+};
 
-export default CompaniesTable
+export default React.memo(CompaniesTable);
