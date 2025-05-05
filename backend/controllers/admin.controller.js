@@ -90,7 +90,7 @@ export const getStatistics = async (req, res, next) => {
             return acc;
         }, { applicant: 0, recruiter: 0 });
 
-        
+
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const usersByDay = await User.aggregate([
@@ -119,7 +119,7 @@ export const getStatistics = async (req, res, next) => {
             {
                 $group: {
                     _id: {
-                        $dateToString: { format: "%Y-%U", date: "$createdAt" }, 
+                        $dateToString: { format: "%Y-%U", date: "$createdAt" },
                     },
                     count: { $sum: 1 },
                 },
@@ -129,7 +129,7 @@ export const getStatistics = async (req, res, next) => {
             },
         ]);
 
-        
+
         const twelveMonthsAgo = new Date();
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
         const usersByMonth = await User.aggregate([
@@ -168,7 +168,7 @@ export const getStatistics = async (req, res, next) => {
             },
         ]);
 
-       
+
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const newJobsLast7Days = await Job.countDocuments({
@@ -201,8 +201,7 @@ export const getStatistics = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
     try {
-        const { keyword, page = 1, limit = 10 } = req.query;
-        const skip = (page - 1) * limit;
+        const { keyword } = req.query;
 
         let query = {};
         if (keyword) {
@@ -215,11 +214,9 @@ export const getAllUsers = async (req, res, next) => {
         }
 
         const users = await User.find(query)
-            .select("_id fullname email role")
-            .skip(skip)
-            .limit(limit);
+            .select("_id fullname email role");
 
-        
+
         if (!users || users.length === 0) {
             throw createError("No users found", 404);
         }
@@ -228,12 +225,7 @@ export const getAllUsers = async (req, res, next) => {
         return res.status(200).json({
             message: "Users retrieved for deletion",
             users,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / limit)
-            },
+            total,
             success: true
         });
     } catch (error) {
@@ -244,8 +236,7 @@ export const getAllUsers = async (req, res, next) => {
 
 export const getAllCompanies = async (req, res, next) => {
     try {
-        const { keyword, page = 1, limit = 10 } = req.query;
-        const skip = (page - 1) * limit;
+        const { keyword } = req.query;
 
         let query = {};
         if (keyword) {
@@ -260,9 +251,8 @@ export const getAllCompanies = async (req, res, next) => {
         const companies = await Company.find(query)
             .select("name createdAt updatedAt")
             .populate("userId", "email fullname")
-            .skip(skip)
-            .limit(limit);
-        
+
+
         if (!companies || companies.length === 0) {
             throw createError("No companies found", 404);
         }
@@ -272,12 +262,7 @@ export const getAllCompanies = async (req, res, next) => {
         return res.status(200).json({
             message: "Users retrieved for deletion",
             companies,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / limit)
-            },
+            total,
             success: true
         });
     } catch (error) {
@@ -288,8 +273,7 @@ export const getAllCompanies = async (req, res, next) => {
 
 export const getApplicants = async (req, res, next) => {
     try {
-        const { keyword, page = 1, limit = 10 } = req.query;
-        const skip = (page - 1) * limit;
+        const { keyword } = req.query;
 
         let query = { role: "applicant" };
         if (keyword) {
@@ -304,20 +288,14 @@ export const getApplicants = async (req, res, next) => {
 
         const users = await User.find(query)
             .select("_id fullname email role")
-            .skip(skip)
-            .limit(limit);
+
 
         const total = await User.countDocuments(query);
 
         return res.status(200).json({
             message: "Applicants retrieved for deletion",
             users,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / limit)
-            },
+            total,
             success: true
         });
     } catch (error) {
@@ -328,8 +306,7 @@ export const getApplicants = async (req, res, next) => {
 
 export const getRecruiters = async (req, res, next) => {
     try {
-        const { keyword, page = 1, limit = 10 } = req.query;
-        const skip = (page - 1) * limit;
+        const { keyword } = req.query;
 
         let query = { role: "recruiter" };
         if (keyword) {
@@ -344,20 +321,14 @@ export const getRecruiters = async (req, res, next) => {
 
         const users = await User.find(query)
             .select("_id fullname email role")
-            .skip(skip)
-            .limit(limit);
+
 
         const total = await User.countDocuments(query);
 
         return res.status(200).json({
             message: "Recruiters retrieved for deletion",
             users,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / limit)
-            },
+            total,
             success: true
         });
     } catch (error) {
@@ -368,8 +339,7 @@ export const getRecruiters = async (req, res, next) => {
 
 export const getCompaniesForDeletion = async (req, res, next) => {
     try {
-        const { keyword, page = 1, limit = 10 } = req.query;
-        const skip = (page - 1) * limit;
+        const { keyword } = req.query;
 
         let query = {};
         if (keyword) {
@@ -383,20 +353,14 @@ export const getCompaniesForDeletion = async (req, res, next) => {
 
         const companies = await Company.find(query)
             .select("_id name location")
-            .skip(skip)
-            .limit(limit);
+
 
         const total = await Company.countDocuments(query);
 
         return res.status(200).json({
             message: "Companies retrieved for deletion",
             companies,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / limit)
-            },
+            total,
             success: true
         });
     } catch (error) {
