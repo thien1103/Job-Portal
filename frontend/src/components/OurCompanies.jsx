@@ -46,7 +46,7 @@ export const OurCompanies = () => {
                 width={70}
                 height={10}
                 alt={obj.logo}
-                class="transform hover:scale-110 transition duration-300 ease-in-out"
+                className="transform hover:scale-110 transition duration-300 ease-in-out"
               />
 
               <h3 className="m-2 font-bold">{obj.title}</h3>

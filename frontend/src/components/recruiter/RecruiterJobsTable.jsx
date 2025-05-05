@@ -6,15 +6,15 @@ import { Edit2, Eye, MoreHorizontal } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 
-const AdminJobsTable = () => { 
-    const {allAdminJobs, searchJobByText} = useSelector(store=>store.job);
+const RecruiterJobsTable = () => { 
+    const {allRecruiterJobs, searchJobByText} = useSelector(store=>store.job);
 
-    const [filterJobs, setFilterJobs] = useState(allAdminJobs);
+    const [filterJobs, setFilterJobs] = useState(allRecruiterJobs);
     const navigate = useNavigate();
 
     useEffect(()=>{ 
         console.log('called');
-        const filteredJobs = allAdminJobs.filter((job)=>{
+        const filteredJobs = allRecruiterJobs.filter((job)=>{
             if(!searchJobByText){
                 return true;
             };
@@ -22,7 +22,7 @@ const AdminJobsTable = () => {
 
         });
         setFilterJobs(filteredJobs);
-    },[allAdminJobs,searchJobByText])
+    },[allRecruiterJobs,searchJobByText])
     return (
         <div>
             <Table>
@@ -46,11 +46,11 @@ const AdminJobsTable = () => {
                                     <Popover>
                                         <PopoverTrigger><MoreHorizontal /></PopoverTrigger>
                                         <PopoverContent className="w-32">
-                                            <div onClick={()=> navigate(`/admin/companies/${job._id}`)} className='flex items-center gap-2 w-fit cursor-pointer'>
+                                            <div onClick={()=> navigate(`/recruiter/companies/${job._id}`)} className='flex items-center gap-2 w-fit cursor-pointer'>
                                                 <Edit2 className='w-4' />
                                                 <span>Edit</span>
                                             </div>
-                                            <div onClick={()=> navigate(`/admin/jobs/${job._id}/applicants`)} className='flex items-center w-fit gap-2 cursor-pointer mt-2'>
+                                            <div onClick={()=> navigate(`/recruiter/jobs/${job._id}/applicants`)} className='flex items-center w-fit gap-2 cursor-pointer mt-2'>
                                                 <Eye className='w-4'/>
                                                 <span>Applicants</span>
                                             </div>
@@ -67,4 +67,4 @@ const AdminJobsTable = () => {
     )
 }
 
-export default AdminJobsTable
+export default RecruiterJobsTable

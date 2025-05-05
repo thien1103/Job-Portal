@@ -4,12 +4,12 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button' 
 import { useNavigate } from 'react-router-dom' 
 import { useDispatch } from 'react-redux' 
-import AdminJobsTable from './AdminJobsTable'
-import useGetAllAdminJobs from '@/hooks/useGetAllAdminJobs'
+import RecruiterJobsTable from './RecruiterJobsTable'
+import useGetAllRecruiterJobs from '@/hooks/useGetAllRecruiterJobs'
 import { setSearchJobByText } from '@/redux/jobSlice'
 
-const AdminJobs = () => {
-  useGetAllAdminJobs();
+const RecruiterJobs = () => {
+  useGetAllRecruiterJobs();
   const [input, setInput] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -27,12 +27,12 @@ const AdminJobs = () => {
             placeholder="Filter by name, role"
             onChange={(e) => setInput(e.target.value)}
           />
-          <Button onClick={() => navigate("/admin/jobs/create")}>New Jobs</Button>
+          <Button onClick={() => navigate("/recruiter/jobs/create")}>New Jobs</Button>
         </div>
-        <AdminJobsTable />
+        <RecruiterJobsTable />
       </div>
     </div>
   )
 }
 
-export default AdminJobs
+export default RecruiterJobs

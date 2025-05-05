@@ -148,8 +148,8 @@ const Navbar = () => {
               <ul className='flex font-[500] items-center gap-5'>
                 {user && user.role === 'recruiter' ? (
                   <>
-                    <NavItem itemName='Companies' to='/admin/companies' />
-                    <NavItem itemName='Jobs' to='/admin/jobs' />
+                    <NavItem itemName='Companies' to='/recruiter/companies' />
+                    <NavItem itemName='Jobs' to='/recruiter/jobs' />
                   </>
                 ) : (
                   <>
@@ -275,8 +275,8 @@ const Navbar = () => {
               <ul className='flex flex-col font-[500] gap-4 py-4 px-6'>
                 {user && user.role === 'recruiter' ? (
                   <>
-                    <NavItem itemName='Companies' to='/admin/companies' onClick={() => setIsOpen(false)} />
-                    <NavItem itemName='Jobs' to='/admin/jobs' onClick={() => setIsOpen(false)} />
+                    <NavItem itemName='Companies' to='/recruiter/companies' onClick={() => setIsOpen(false)} />
+                    <NavItem itemName='Jobs' to='/recruiter/jobs' onClick={() => setIsOpen(false)} />
                   </>
                 ) : (
                   <>
