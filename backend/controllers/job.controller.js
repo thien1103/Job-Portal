@@ -1,6 +1,7 @@
 import { Job } from "../models/job.model.js";
 import { createError } from "../utils/appError.js";
 import { Company } from "../models/company.model.js";
+import { Application } from "../models/application.model.js";
 
 export const postJob = async (req, res, next) => {
     try {
@@ -18,7 +19,7 @@ export const postJob = async (req, res, next) => {
             throw createError(`Invalid job type. Must be one of: ${validJobTypes.join(", ")}`, 400);
         }
 
-        const validLevels = ['Intern', 'Fresher', 'Junior', 'Senior', 'Manager', 'Director'];
+        const validLevels = ['Intern', 'Fresher', 'Junior', 'Middle', 'Senior', 'Manager', 'Director'];
         if (!validLevels.includes(level)) {
             throw createError(`Invalid level. Must be one of: ${validLevels.join(", ")}`, 400);
         }
@@ -129,7 +130,7 @@ export const updateJob = async (req, res, next) => {
         if (job.company.toString() !== company._id.toString()) {
             throw createError("You are not authorized to update a job for this company", 403);
         }
-        
+
         const updateData = {};
 
         if (title !== undefined) {
@@ -138,7 +139,7 @@ export const updateJob = async (req, res, next) => {
             }
             updateData.title = title;
         }
-        
+
         if (description !== undefined) {
             if (Array.isArray(description)) {
                 updateData.description = description.map(item => item.trim()).filter(item => item).join("\n");
@@ -151,7 +152,7 @@ export const updateJob = async (req, res, next) => {
                 throw createError("Description cannot be empty", 400);
             }
         }
-        
+
         if (requirements !== undefined) {
             if (Array.isArray(requirements)) {
                 updateData.requirements = requirements.map(item => item.trim()).filter(item => item);
@@ -168,14 +169,14 @@ export const updateJob = async (req, res, next) => {
             }
             updateData.salary = salary !== null ? Number(salary) : null;
         }
-        
+
         if (location !== undefined) {
             if (typeof location !== "string" || !location.trim()) {
                 throw createError("Location must be a non-empty string", 400);
             }
             updateData.location = location;
         }
-        
+
         if (jobType !== undefined) {
             const validJobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'];
             if (!validJobTypes.includes(jobType)) {
@@ -238,7 +239,7 @@ export const updateJob = async (req, res, next) => {
         }
 
         if (level !== undefined) {
-            const validLevels = ['Intern', 'Fresher', 'Junior', 'Senior', 'Manager', 'Director'];
+            const validLevels = ['Intern', 'Fresher', 'Junior', 'Middle', 'Senior', 'Manager', 'Director'];
             if (!validLevels.includes(level)) {
                 throw createError(`Invalid level. Must be one of: ${validLevels.join(", ")}`, 400);
             }
@@ -314,6 +315,13 @@ export const deleteJob = async (req, res, next) => {
         // Verify the job belongs to the user's company
         if (job.company.toString() !== company._id.toString()) {
             throw createError("You are not authorized to delete a job for this company", 403);
+        }
+
+        if (job.applications && job.applications.length > 0) {
+            const deletedApplications = await Application.deleteMany({ _id: { $in: job.applications } });
+            console.log(`Deleted ${deletedApplications.deletedCount} applications for job ${jobId}`);
+        } else {
+            console.log(`No applications to delete for job ${jobId}`);
         }
 
         await Job.findByIdAndDelete(jobId);
@@ -394,7 +402,7 @@ export const getJobById = async (req, res, next) => {
         const descriptionLines = job.description
             ? job.description.split("\n").map(line => line.trim()).filter(line => line)
             : [];
-        
+
         return res.status(200).json({
             job: {
                 title: job.title,
@@ -431,7 +439,7 @@ export const getRecruiterJobs = async (req, res, next) => {
                 path: "applications",
                 select: "_id userId status createdAt"
             });
-        
+
         if (!jobs || jobs.length === 0) {
             throw createError("No jobs found for this recruiter", 404);
         }

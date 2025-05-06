@@ -56,8 +56,10 @@ export const applyJob = async (req, res, next) => {
             status: "pending"
         });
 
-        job.applications.push(newApplication._id);
-        await job.save();
+        await Job.updateOne(
+            { _id: jobId },
+            { $push: { applications: newApplication._id } }
+        );
 
         const populatedApplication = await Application.findById(newApplication._id)
             .populate({
