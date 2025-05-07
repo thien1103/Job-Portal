@@ -31,7 +31,7 @@ export const register = async (req, res, next) => {
             throw createError('Role is invalid', 400);
         }
 
-        let profilePhoto = "";
+        let profilePhoto = "https://res.cloudinary.com/ddhjuylxz/image/upload/v1746630271/profile_user.jpg_bqb5ef.jpg";
         if (req.file) {
             const fileUri = getDataUri(req.file);
             const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
@@ -49,6 +49,8 @@ export const register = async (req, res, next) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        console.log("Profile photo: ", profilePhoto);
 
         const newUser = await User.create({
             fullname,

@@ -33,7 +33,7 @@ export const registerCompany = async (req, res, next) => {
             throw createError("You can only register one company", 400);
         }
 
-        let logo = {};
+        let logo = "https://res.cloudinary.com/ddhjuylxz/image/upload/v1746631066/company_logo_default_w0lruy.png";
         if (req.file) {
             const fileUri = getDataUri(req.file);
             const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
