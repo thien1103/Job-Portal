@@ -37,7 +37,7 @@ export const registerCompany = async (req, res, next) => {
         if (req.file) {
             const fileUri = getDataUri(req.file);
             const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-            companyPhoto = cloudResponse.secure_url;
+            logo = cloudResponse.secure_url;
         };
 
         const company = await Company.create({
