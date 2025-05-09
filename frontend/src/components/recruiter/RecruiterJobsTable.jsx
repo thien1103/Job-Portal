@@ -1,70 +1,91 @@
-import React, { useEffect, useState } from 'react'
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { Avatar, AvatarImage } from '../ui/avatar'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { Edit2, Eye, MoreHorizontal } from 'lucide-react'
-import { useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from "react";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Edit2, Eye, MoreHorizontal } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
-const RecruiterJobsTable = () => { 
-    const {allRecruiterJobs, searchJobByText} = useSelector(store=>store.job);
+const RecruiterJobsTable = ({ jobs, loading, error }) => {
+  const { searchJobByText } = useSelector((store) => store.job);
+  const [filterJobs, setFilterJobs] = useState([]); // Initialize with empty array
+  const navigate = useNavigate();
 
-    const [filterJobs, setFilterJobs] = useState(allRecruiterJobs);
-    const navigate = useNavigate();
+  useEffect(() => {
+    const filteredJobs = jobs ? jobs.filter((job) => {
+      if (!searchJobByText) return true;
+      return (
+        job?.title?.toLowerCase().includes(searchJobByText.toLowerCase()) ||
+        job?.company?.name.toLowerCase().includes(searchJobByText.toLowerCase())
+      );
+    }) : [];
+    setFilterJobs(filteredJobs);
+  }, [jobs, searchJobByText]);
 
-    useEffect(()=>{ 
-        console.log('called');
-        const filteredJobs = allRecruiterJobs.filter((job)=>{
-            if(!searchJobByText){
-                return true;
-            };
-            return job?.title?.toLowerCase().includes(searchJobByText.toLowerCase()) || job?.company?.name.toLowerCase().includes(searchJobByText.toLowerCase());
+  return (
+    <Table>
+      <TableCaption>A list of your recent posted jobs</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Company Name</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Created Date</TableHead>
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center">
+              Loading...
+            </TableCell>
+          </TableRow>
+        ) : error || filterJobs.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center"/>
+              {error ? "Error loading jobs" : "No Job Found"}
+            </TableRow>
+        ) : (
+          filterJobs.map((job) => (
+            <TableRow key={job.id}>
+              <TableCell>
+                <div
+                  className="cursor-pointer hover:underline hover:text-blue-600"
+                  onClick={() => navigate(`/company/${job.company._id}`)}
+                >
+                  {job?.company?.name}
+                </div>
+              </TableCell>
+              <TableCell>{job?.title}</TableCell>
+              <TableCell>{job?.createdAt.split("T")[0]}</TableCell>
+              <TableCell className="text-right cursor-pointer">
+                <Popover>
+                  <PopoverTrigger>
+                    <MoreHorizontal />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-32">
+                    <div
+                      onClick={() => navigate(`/recruiter/jobs/edit/${job.id}`)}
+                      className="flex items-center gap-2 w-fit cursor-pointer"
+                    >
+                      <Edit2 className="w-4" />
+                      <span>Edit</span>
+                    </div>
+                    <div
+                      onClick={() => navigate(`/recruiter/jobs/${job.id}/applicants`)}
+                      className="flex items-center w-fit gap-2 cursor-pointer mt-2"
+                    >
+                      <Eye className="w-4" />
+                      <span>Applicants</span>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+};
 
-        });
-        setFilterJobs(filteredJobs);
-    },[allRecruiterJobs,searchJobByText])
-    return (
-        <div>
-            <Table>
-                <TableCaption>A list of your recent  posted jobs</TableCaption>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Company Name</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {
-                        filterJobs?.map((job) => (
-                            <tr>
-                                <TableCell>{job?.company?.name}</TableCell>
-                                <TableCell>{job?.title}</TableCell>
-                                <TableCell>{job?.createdAt.split("T")[0]}</TableCell>
-                                <TableCell className="text-right cursor-pointer">
-                                    <Popover>
-                                        <PopoverTrigger><MoreHorizontal /></PopoverTrigger>
-                                        <PopoverContent className="w-32">
-                                            <div onClick={()=> navigate(``)} className='flex items-center gap-2 w-fit cursor-pointer'>
-                                                <Edit2 className='w-4' />
-                                                <span>Edit</span>
-                                            </div>
-                                            <div onClick={()=> navigate(`/recruiter/jobs/${job.id}/applicants`)} className='flex items-center w-fit gap-2 cursor-pointer mt-2'>
-                                                <Eye className='w-4'/>
-                                                <span>Applicants</span>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                </TableCell>
-                            </tr>
-
-                        ))
-                    }
-                </TableBody>
-            </Table>
-        </div>
-    )
-}
-
-export default RecruiterJobsTable
+export default RecruiterJobsTable;

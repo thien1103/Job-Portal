@@ -1,17 +1,48 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Navbar from './shared/Navbar';
 import FilterCard from './FilterCard';
 import Job from './Job';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
+import axios from 'axios';
+import { JOB_API_END_POINT } from '@/utils/constant';
+import { setAllJobs } from '@/redux/jobSlice';
+import { useLocation } from 'react-router-dom'; // Import useLocation to access navigation state
 
 const Jobs = () => {
     const { allJobs, searchedQuery } = useSelector((store) => store.job);
+    const dispatch = useDispatch();
+    const location = useLocation(); // Get navigation state
     const [filterJobs, setFilterJobs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [direction, setDirection] = useState(0);
-    const jobsPerPage = 6; // 2 rows × 3 columns
+    const jobsPerPage = 6;
+
+    // Fetch all jobs
+    const fetchAllJobs = useCallback(async () => {
+        try {
+            const res = await axios.get(`${JOB_API_END_POINT}`, {
+                withCredentials: true,
+            });
+            if (res.data.success) {
+                dispatch(setAllJobs(res.data.jobs));
+            }
+        } catch (error) {
+            console.error('Failed to fetch jobs:', error);
+        }
+    }, [dispatch]);
+
+    // Fetch jobs on mount and when refresh is signaled via navigation
+    useEffect(() => {
+        fetchAllJobs(); // Initial fetch on mount
+        // Check if navigation state indicates a refresh
+        if (location.state?.refresh) {
+            fetchAllJobs(); // Re-fetch if refresh is true
+            // Clear the state to avoid repeated refreshes
+            window.history.replaceState({}, document.title);
+        }
+    }, [fetchAllJobs, location.state]);
 
     useEffect(() => {
         if (Array.isArray(allJobs)) {
@@ -47,6 +78,10 @@ const Jobs = () => {
     const currentJobs = Array.isArray(filterJobs) ? filterJobs.slice(indexOfFirstJob, indexOfLastJob) : [];
     const totalPages = Math.ceil((filterJobs.length || 0) / jobsPerPage);
 
+    // Debug logging
+    console.log('filterJobs:', filterJobs, 'filterJobs.length:', filterJobs.length);
+    console.log('currentPage:', currentPage, 'totalPages:', totalPages, 'currentJobs:', currentJobs);
+
     // Define sliding animation variants
     const slideVariants = {
         enter: (direction) => ({
@@ -68,10 +103,10 @@ const Jobs = () => {
             <Navbar />
             <div className='max-w-[1300px] mx-auto mt-5'>
                 <div className='flex gap-5'>
-                    <div className='w-[20%]'>
-                        <FilterCard/>
+                    <div className='w-[20%] max-h-[800px]'>
+                        <FilterCard />
                     </div>
-                    <div className='flex-1 flex flex-col h-[102vh]'>
+                    <div className='flex-1 flex flex-col min-h-screen'>
                         {filterJobs.length <= 0 ? (
                             <span className='text-gray-500'>No jobs found</span>
                         ) : (
@@ -86,49 +121,49 @@ const Jobs = () => {
                                             animate='center'
                                             exit='exit'
                                             transition={{ duration: 0.5 }}
-                                            className='grid grid-cols-3 gap-2 h-[616px]' // Fixed height for 2 rows of 300px cards + 16px gap
+                                            className='grid grid-cols-3 gap-2 w-full'
                                         >
                                             {currentJobs.map((job) => (
-                                                <Job key={job?._id} job={job} />
+                                                <div key={job?._id} className='scale-90'>
+                                                    <Job job={job} />
+                                                </div>
                                             ))}
                                         </motion.div>
                                     </AnimatePresence>
                                 </div>
-                                {totalPages > 1 && (
-                                    <div className='flex items-center justify-center mt-4 p-2 h-[80px]'>
-                                        <Button
-                                            className='m-4 rounded-3xl bg-[#087658] hover:bg-[#065c47]'
-                                            onClick={() => {
-                                                setDirection(-1);
-                                                setCurrentPage((prev) => Math.max(prev - 1, 1));
-                                            }}
-                                            disabled={currentPage === 1}
-                                        >
-                                            <img
-                                                src='https://cdn-icons-png.flaticon.com/128/271/271220.png'
-                                                className='w-[80%] h-[80%]'
-                                                alt='Previous'
-                                            />
-                                        </Button>
-                                        <p className='font-semibold'>
-                                            Page {currentPage} of {totalPages}
-                                        </p>
-                                        <Button
-                                            className='m-4 rounded-3xl bg-[#087658] hover:bg-[#065c47]'
-                                            onClick={() => {
-                                                setDirection(1);
-                                                setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-                                            }}
-                                            disabled={currentPage === totalPages}
-                                        >
-                                            <img
-                                                src='https://cdn-icons-png.flaticon.com/128/271/271228.png'
-                                                className='w-[80%] h-[80%]'
-                                                alt='Next'
-                                            />
-                                        </Button>
-                                    </div>
-                                )}
+                                <div className='flex items-center justify-center p-2 h-[80px]'>
+                                    <Button
+                                        className='m-4 w-10 h-10 rounded-full bg-[#087658] hover:bg-[#065c47]'
+                                        onClick={() => {
+                                            setDirection(-1);
+                                            setCurrentPage((prev) => Math.max(prev - 1, 1));
+                                        }}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <img
+                                            src='https://cdn-icons-png.flaticon.com/128/271/271220.png'
+                                            className='w-6 h-6 object-contain'
+                                            alt='Previous'
+                                        />
+                                    </Button>
+                                    <p className='font-semibold'>
+                                        Page {currentPage} of {totalPages}
+                                    </p>
+                                    <Button
+                                        className='m-4 w-10 h-10 rounded-full bg-[#087658] hover:bg-[#065c47]'
+                                        onClick={() => {
+                                            setDirection(1);
+                                            setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+                                        }}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <img
+                                            src='https://cdn-icons-png.flaticon.com/128/271/271228.png'
+                                            className='w-6 h-6 object-contain'
+                                            alt='Next'
+                                        />
+                                    </Button>
+                                </div>
                             </>
                         )}
                     </div>

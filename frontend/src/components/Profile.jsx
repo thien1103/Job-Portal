@@ -9,6 +9,8 @@ import AppliedJobTable from "./AppliedJobTable";
 import UpdateProfileDialog from "./UpdateProfileDialog";
 import { useSelector } from "react-redux";
 import useGetAppliedJobs from "@/hooks/useGetAppliedJobs";
+import companyLogo from "../assets/company_profile_icon.png"
+import educationLogo from "../assets/education_profile_icon.png"
 
 const Profile = () => {
   useGetAppliedJobs();
@@ -176,7 +178,7 @@ const Profile = () => {
 
       {/* Experience */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
-        <h1 className="font-bold text-lg">Kinh nghiệm</h1>
+        <h1 className="font-bold text-lg">Experience</h1>
         {experiences.map((exp, index) => (
           <div
             key={index}
@@ -184,7 +186,7 @@ const Profile = () => {
           >
             <div className="flex items-center">
               <img
-                src="https://www.vhv.rs/dpng/d/598-5982089_icon-blue-company-icon-png-transparent-png.png"
+                src= {companyLogo}
                 alt="icon"
                 className="w-10 h-10"
               />
@@ -283,12 +285,12 @@ const Profile = () => {
 
       {/* Education */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
-        <h1 className="font-bold text-lg">Học vấn</h1>
+        <h1 className="font-bold text-lg">Education</h1>
         {educations.map((edu, index) => (
           <div key={index} className="flex justify-between items-center p-4 border-b">
             <div className="flex items-center">
               <img
-                src="https://www.pngkey.com/png/full/131-1311026_graduate-school-icon-university-icon-blue.png"
+                src={educationLogo}
                 alt="icon"
                 className="w-10 h-10"
               />

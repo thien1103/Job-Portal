@@ -30,7 +30,7 @@ const MyCV = () => {
       console.log(response.data);
       setCvList(response.data.cvs || []);
     } catch (error) {
-      toast.error("Không thể tải danh sách CV.");
+      toast.error("Unable to fetch CV.");
       console.error(error);
     }
   };
@@ -40,10 +40,10 @@ const MyCV = () => {
       const response = await axios.delete(`${USER_API_END_POINT}/cv/${cvId}`, {
         withCredentials: true,
       });
-      toast.success(response.data.message || "Xóa CV thành công");
+      toast.success(response.data.message || "Delete CV successfully.");
       fetchCVs(); // Refresh list after deletion
     } catch (error) {
-      toast.error("Xóa CV thất bại.");
+      toast.error("Delete CV failed.");
       console.error(error);
     }
   };
@@ -63,7 +63,7 @@ const MyCV = () => {
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error("Vui lòng chọn file CV.");
+      toast.error("Please chose a CV file.");
       return;
     }
 
@@ -82,15 +82,15 @@ const MyCV = () => {
         formData,
         { withCredentials: true }
       );
-      toast.success(data.message || "Tải lên thành công");
+      toast.success(data.message || "Upload successfully.");
       fetchCVs();
       setOpenUploadModal(false);
       setFile(null);
     } catch (error) {
       if (error.response) {
-        toast.error(error.response.data.message || "Tải lên thất bại.");
+        toast.error(error.response.data.message || "Upload failed.");
       } else {
-        toast.error("Tải lên thất bại.");
+        toast.error("Upload failed.");
       }
       console.error(error);
     }
@@ -103,10 +103,10 @@ const MyCV = () => {
         {},
         { withCredentials: true }
       );
-      toast.success("Cập nhật CV chính thành công");
+      toast.success("Update primary CV successfully.");
       fetchCVs(); // Refresh the CV list to reflect the change
     } catch (error) {
-      toast.error("Cập nhật CV chính thất bại.");
+      toast.error("Update primary CV failed.");
       console.error(error);
     }
   };
@@ -118,11 +118,11 @@ const MyCV = () => {
         { title: newTitle },
         { withCredentials: true }
       );
-      toast.success(response.data.message || "Cập nhật thành công");
+      toast.success(response.data.message || "Update successfully.");
       setOpenEditDialog(false);
       fetchCVs();
     } catch (error) {
-      toast.error("Cập nhật thất bại");
+      toast.error("Update failed.");
       console.error(error);
     }
   };
@@ -144,7 +144,7 @@ const MyCV = () => {
       toast.success(response.data.message);
       setIsProfilePublic(!isProfilePublic); // Toggle the state
     } catch (error) {
-      toast.error("Cập nhật trạng thái hồ sơ thất bại.");
+      toast.error("Update profile status failed.");
       console.error(error);
     }
   };
@@ -166,7 +166,7 @@ const MyCV = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-lg p-6 shadow">
             <div className="flex flex-row items-center justify-between">
-              <h2 className="text-2xl font-bold mb-4">CV đã upload</h2>
+              <h2 className="text-2xl font-bold mb-4">CV Uploaded</h2>
               <div className="">
                 <button
                   onClick={() => setOpenUploadModal(true)}
@@ -177,7 +177,7 @@ const MyCV = () => {
                     alt="Upload CV"
                     className="w-5 h-5 mr-3 mt-[3px]"
                   />
-                  Tải CV lên
+                  Upload CV
                 </button>
               </div>
             </div>
@@ -185,7 +185,7 @@ const MyCV = () => {
               {cvList.length === 0 ? (
                 <div>
                   <span className="text-gray-500">
-                    Chưa có CV nào được tải lên.
+                    No CV uploaded.
                   </span>
                   <img
                     src="https://cdn-icons-png.flaticon.com/128/6818/6818206.png"
@@ -221,10 +221,10 @@ const MyCV = () => {
                               className="h-4 w-4 text-yellow-500"
                             />
                             <span className="text-[#3b3b3b] group-hover:hidden">
-                              CV chính
+                              Primary CV
                             </span>
                             <span className="text-white hidden group-hover:inline">
-                              Hủy CV chính
+                            Unset primary CV
                             </span>
                           </>
                         ) : (
@@ -236,7 +236,7 @@ const MyCV = () => {
                               />
                             </span>
                             <span className="transition duration-200 group-hover:text-white">
-                              Đặt làm CV chính
+                              Set primary CV
                             </span>
                           </>
                         )}
@@ -261,7 +261,7 @@ const MyCV = () => {
                             </a>
                           </div>
                           <p className="text-sm text-gray-500">
-                            Cập nhật lần cuối{" "}
+                            Last edit:{" "}
                             {new Date(cv.updatedAt).toLocaleDateString(
                               "vi-VN",
                               {
@@ -293,10 +293,10 @@ const MyCV = () => {
                               <Dialog.Overlay className="fixed inset-0 bg-black/30 z-40" />
                               <Dialog.Content className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
                                 <Dialog.Title className="sr-only">
-                                  Cập nhật tiêu đề CV
+                                  Update CV title
                                 </Dialog.Title>
                                 <h2 className="text-lg font-semibold">
-                                  Cập nhật tiêu đề CV
+                                  Update CV title
                                 </h2>
                                 <input
                                   type="text"
@@ -306,13 +306,13 @@ const MyCV = () => {
                                 />
                                 <div className="flex justify-end mt-4">
                                   <Dialog.Close className="text-gray-500 hover:text-red-500 mr-4">
-                                    Hủy
+                                    Cancel
                                   </Dialog.Close>
                                   <button
                                     onClick={handleUpdateCVTitle}
                                     className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                                   >
-                                    Cập nhật
+                                    Update
                                   </button>
                                 </div>
                               </Dialog.Content>
@@ -333,7 +333,7 @@ const MyCV = () => {
                               alt="Edit CV"
                               className="w-5 h-5 inline-block mr-1"
                             />
-                            Chỉnh sửa
+                            Edit
                           </a>
 
                           <a
@@ -367,7 +367,7 @@ const MyCV = () => {
                               alt="Download CV"
                               className="w-5 h-5 inline-block mr-1"
                             />
-                            Tải xuống
+                            Download
                           </a>
                         </div>
 
@@ -380,14 +380,14 @@ const MyCV = () => {
                             <Dialog.Overlay className="fixed inset-0 bg-black/30 z-40" />
                             <Dialog.Content className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
                               <h2 className="text-lg font-semibold">
-                                Xác nhận xóa
+                                Confirm delete
                               </h2>
                               <p className="mt-2">
-                                Bạn có chắc chắn muốn xóa CV này không?
+                                Are you sure you want to delete this CV?
                               </p>
                               <div className="flex justify-end mt-4">
                                 <Dialog.Close className="text-gray-500 hover:text-red-500 mr-4">
-                                  Hủy
+                                  Cancel
                                 </Dialog.Close>
                                 <button
                                   onClick={() => {
@@ -396,7 +396,7 @@ const MyCV = () => {
                                   }}
                                   className="bg-red-600 text-white px-4 py-2 rounded"
                                 >
-                                  Xóa
+                                  Delete
                                 </button>
                               </div>
                             </Dialog.Content>
@@ -426,11 +426,11 @@ const MyCV = () => {
         {/* Right section */}
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
           <h3 className="font-bold text-gray-800 mt-4 mb-2">
-            Trạng thái hồ sơ
+            Profile Status
           </h3>
           <div className="flex items-center justify-between">
             <span className="text-sm">
-              {isProfilePublic ? "Riêng tư" : "Công khai"}
+              {isProfilePublic ? "Private" : "Public"}
             </span>
             <Switch
               checked={!isProfilePublic}
@@ -438,8 +438,7 @@ const MyCV = () => {
             />
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Nếu bạn đặt thành công khai, hồ sơ của bạn sẽ hiển thị cho mọi
-            người.
+            If you set your profile status to public, everyone will be able to see your profile.
           </p>
         </div>
       </div>
@@ -454,11 +453,10 @@ const MyCV = () => {
                 <div className="flex items-center">
                   <div>
                     <h2 className="text-xl font-semibold text-green-700">
-                      Upload CV để các cơ hội việc làm tự tìm đến bạn
+                      Upload your CV to find work easily.
                     </h2>
                     <p className="text-sm text-gray-600">
-                      Giảm đến 50% thời gian cần thiết để tìm được một công việc
-                      phù hợp.
+                     Reduce up to 50% time to find a hot and suitable job for your career.
                     </p>
                   </div>
                   <img
@@ -484,7 +482,7 @@ const MyCV = () => {
                 onClick={() => document.getElementById("cvInput").click()}
               >
                 <p className="text-sm font-bold mb-2">
-                  Tải CV lên từ máy tính, chọn hoặc kéo thả
+                  Upload your CV, select or drag the file here.
                 </p>
                 <input
                   id="cvInput"
@@ -494,7 +492,7 @@ const MyCV = () => {
                   className="hidden"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Hỗ trợ định dạng .doc, .docx, .pdf dưới 5MB
+                  Supporting file type .doc, .docx, .pdf under 5MB
                 </p>
                 {file && (
                   <p className="mt-2 text-green-700 text-sm">
@@ -507,7 +505,7 @@ const MyCV = () => {
                 onClick={handleUpload}
                 className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
               >
-                Tải CV lên
+                Upload CV
               </button>
 
               {/* Four Blocks Section */}
@@ -519,7 +517,7 @@ const MyCV = () => {
                     className="mb-2 w-[30%]"
                   />
                   <p className="text-center font-semibold">
-                    Nhận về các cơ hội tốt nhất
+                    Receive the best opportunities
                   </p>
                 </div>
                 <div className="border border-gray-300 bg-white p-4 rounded-lg flex flex-col items-center">
@@ -529,7 +527,7 @@ const MyCV = () => {
                     className="mb-2 w-[30%]"
                   />
                   <p className="text-center font-semibold">
-                    Theo dõi số liệu, tối ưu CV
+                    Tracking data, utilize your CV
                   </p>
                 </div>
                 <div className="border border-gray-300 bg-white p-4 rounded-lg flex flex-col items-center">
@@ -539,7 +537,7 @@ const MyCV = () => {
                     className="mb-2 w-[30%]"
                   />
                   <p className="text-center font-semibold">
-                    Chia sẻ CV bất cứ nơi đâu
+                    Share your CV to everywhere
                   </p>
                 </div>
                 <div className="border border-gray-300 bg-white p-4 rounded-lg flex flex-col items-center">
@@ -549,7 +547,7 @@ const MyCV = () => {
                     className="mb-2 w-[30%]"
                   />
                   <p className="text-center font-semibold">
-                    Kết nối nhanh chóng với nhà tuyển dụng
+                    Fast connect with the recruiters
                   </p>
                 </div>
               </div>

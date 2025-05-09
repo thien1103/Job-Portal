@@ -1,24 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const companySlice = createSlice({
-    name:"company",
-    initialState:{
-        singleCompany:null,
-        companies:[],
-        searchCompanyByText:"",
+    name: "company",
+    initialState: {
+        singleCompany: null,
+        companies: [],
+        searchCompanyByText: "",
+        loading: false, // Added loading state
     },
-    reducers:{
+    reducers: {
         // actions
-        setSingleCompany:(state,action) => {
+        setSingleCompany: (state, action) => {
             state.singleCompany = action.payload;
         },
-        setCompanies:(state,action) => {
+        setCompanies: (state, action) => {
             state.companies = action.payload;
         },
-        setSearchCompanyByText:(state,action) => {
+        setSearchCompanyByText: (state, action) => {
             state.searchCompanyByText = action.payload;
-        }
-    }
+        },
+        setLoading: (state, action) => { // Added setLoading action
+            state.loading = action.payload;
+        },
+    },
 });
-export const {setSingleCompany, setCompanies,setSearchCompanyByText} = companySlice.actions;
+export const { setSingleCompany, setCompanies, setSearchCompanyByText, setLoading } = companySlice.actions; // Added setLoading to exports
 export default companySlice.reducer;

@@ -47,37 +47,52 @@ const CompaniesTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredCompanies.map((company) => (
-            <TableRow key={company._id}>
-              <TableCell>
-                <Avatar>
-                  <AvatarImage src={company.logo} />
-                </Avatar>
-              </TableCell>
-              <TableCell>{company.name}</TableCell>
-              <TableCell>
-                {new Date(company.createdAt).toLocaleDateString()}
-              </TableCell>
-              <TableCell className="text-right">
-                <Popover>
-                  <PopoverTrigger>
-                    <MoreHorizontal />
-                  </PopoverTrigger>
-                  <PopoverContent className="w-32">
-                    <div
-                      onClick={() =>
-                        navigate(`/recruiter/companies/${company._id}`)
-                      }
-                      className="flex items-center gap-2 w-fit cursor-pointer"
-                    >
-                      <Edit2 className="w-4" />
-                      <span>Edit</span>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+          {filteredCompanies.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center">
+                No Companies Found
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            filteredCompanies.map((company) => (
+              <TableRow key={company._id}>
+                <TableCell>
+                  <Avatar>
+                    <AvatarImage src={company.logo} />
+                  </Avatar>
+                </TableCell>
+                <TableCell>
+                  <div
+                  className="cursor-pointer hover:underline hover:text-blue-600"
+                    onClick={() => navigate(`/company/${company._id}`)}
+                  >
+                    {company.name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {new Date(company.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Popover>
+                    <PopoverTrigger>
+                      <MoreHorizontal />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-32">
+                      <div
+                        onClick={() =>
+                          navigate(`/recruiter/companies/${company._id}`)
+                        }
+                        className="flex items-center gap-2 w-fit cursor-pointer"
+                      >
+                        <Edit2 className="w-4" />
+                        <span>Edit</span>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>

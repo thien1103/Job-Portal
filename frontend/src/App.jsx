@@ -24,6 +24,9 @@ import CompaniesAdmin from "./components/admin/Companies";
 import ApplicantsAdmin from "./components/admin/Applicant";
 import RecruitersAdmin from "./components/admin/Recruiter";
 import Statistics from "./components/admin/Statistics";
+import EditJob from "./components/recruiter/EditRecruiterJob";
+import VisitUserPage from './components/recruiter/VisitUserPage';
+import VisitCompanyPage from './components/VisitCompanyPage';
 
 const appRouter = createBrowserRouter([
   {
@@ -53,6 +56,10 @@ const appRouter = createBrowserRouter([
   {
     path: "/profile",
     element: <Profile />,
+  },
+  {
+    path: "/company/:companyId",
+    element: <VisitCompanyPage />,
   },
   {
     path: "/myCV",
@@ -87,6 +94,14 @@ const appRouter = createBrowserRouter([
   {
     path: "/recruiter/jobs/:id/applicants",
     element: <ProtectedRoute><Applicants /></ProtectedRoute>,
+  },
+  {
+    path: "/recruiter/jobs/edit/:id",
+    element: <ProtectedRoute><EditJob /></ProtectedRoute>,
+  },
+  {
+    path: "/visit-user/:userId",
+    element: <ProtectedRoute><VisitUserPage /></ProtectedRoute>,
   },
 
   // ADMIN SECTION
