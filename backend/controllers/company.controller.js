@@ -64,6 +64,7 @@ export const registerCompany = async (req, res, next) => {
             success: true
         });
     } catch (error) {
+        console.log("error registerCompany API: ", error);
         next(error);
     }
 }
