@@ -377,25 +377,25 @@ export const deleteApplication = async (req, res, next) => {
             throw createError("Application not found", 404);
         }
 
-        console.log("Company:", {
-            email: application.applicant?.email,
-            fullname: application.applicant?.fullname
-        });
+        if (!application.job.company.userId.equals(userId)) {
+            throw createError("You are not authorized to delete this application", 403);
+        }
+
         if (!application.applicant.email) {
             console.error("No email found for applicant:", application.applicant._id);
             throw createError("Applicant email is missing", 400);
         }
+
+        await Job.updateOne(
+            { _id: application.job._id },
+            { $pull: { applications: applicationId } }
+        );
 
         if (application.resume) {
             const publicId = application.resume.split("/").pop().split(".")[0];
             await cloudinary.uploader.destroy(`resumes/${publicId}`, { resource_type: "raw" });
         }
 
-        const job = application.job;
-        job.applications = job.applications.filter(appId => appId.toString() !== applicationId);
-        await job.save();
-
-        console.log("applicant's name: ", application.applicant.fullname);
         const deletedBy = `the recruiter at ${application.job.company.name}`;
         const emailSubject = "Your Job Application Has Been Deleted";
         const emailText = `
