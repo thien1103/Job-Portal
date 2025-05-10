@@ -1,24 +1,38 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../ui/popover";
 import { Edit2, Eye, MoreHorizontal } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 const RecruiterJobsTable = ({ jobs, loading, error }) => {
   const { searchJobByText } = useSelector((store) => store.job);
-  const [filterJobs, setFilterJobs] = useState([]); // Initialize with empty array
+  const [filterJobs, setFilterJobs] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const filteredJobs = jobs ? jobs.filter((job) => {
-      if (!searchJobByText) return true;
-      return (
-        job?.title?.toLowerCase().includes(searchJobByText.toLowerCase()) ||
-        job?.company?.name.toLowerCase().includes(searchJobByText.toLowerCase())
-      );
-    }) : [];
-    setFilterJobs(filteredJobs);
+    const filtered = jobs
+      ? jobs.filter((job) => {
+          if (!searchJobByText) return true;
+          return (
+            job?.title?.toLowerCase().includes(searchJobByText.toLowerCase()) ||
+            job?.company?.name?.toLowerCase().includes(searchJobByText.toLowerCase())
+          );
+        })
+      : [];
+    setFilterJobs(filtered);
   }, [jobs, searchJobByText]);
 
   return (
@@ -26,24 +40,31 @@ const RecruiterJobsTable = ({ jobs, loading, error }) => {
       <TableCaption>A list of your recent posted jobs</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead>Company Name</TableHead>
-          <TableHead>Role</TableHead>
-          <TableHead>Created Date</TableHead>
-          <TableHead className="text-right">Action</TableHead>
+          <TableHead>Company</TableHead>
+          <TableHead>Job Name</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Level</TableHead>
+          <TableHead>Location</TableHead>
+          <TableHead>Salary</TableHead>
+          <TableHead>Positions</TableHead>
+          <TableHead>Deadline</TableHead>
+          <TableHead>Created</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell colSpan={4} className="text-center">
+            <TableCell colSpan={10} className="text-center">
               Loading...
             </TableCell>
           </TableRow>
         ) : error || filterJobs.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={4} className="text-center"/>
+            <TableCell colSpan={10} className="text-center">
               {error ? "Error loading jobs" : "No Job Found"}
-            </TableRow>
+            </TableCell>
+          </TableRow>
         ) : (
           filterJobs.map((job) => (
             <TableRow key={job.id}>
@@ -52,15 +73,21 @@ const RecruiterJobsTable = ({ jobs, loading, error }) => {
                   className="cursor-pointer hover:underline hover:text-blue-600"
                   onClick={() => navigate(`/company/${job.company._id}`)}
                 >
-                  {job?.company?.name}
+                  {job.company?.name}
                 </div>
               </TableCell>
-              <TableCell>{job?.title}</TableCell>
-              <TableCell>{job?.createdAt.split("T")[0]}</TableCell>
-              <TableCell className="text-right cursor-pointer">
+              <TableCell>{job.title}</TableCell>
+              <TableCell>{job.jobType}</TableCell>
+              <TableCell>{job.level}</TableCell>
+              <TableCell>{job.location}</TableCell>
+              <TableCell>{job.salary.toLocaleString()}₫</TableCell>
+              <TableCell>{job.position}</TableCell>
+              <TableCell>{job.deadline}</TableCell>
+              <TableCell>{job.createdAt.split("T")[0]}</TableCell>
+              <TableCell className="text-right">
                 <Popover>
                   <PopoverTrigger>
-                    <MoreHorizontal />
+                    <MoreHorizontal className="cursor-pointer" />
                   </PopoverTrigger>
                   <PopoverContent className="w-32">
                     <div
@@ -71,7 +98,9 @@ const RecruiterJobsTable = ({ jobs, loading, error }) => {
                       <span>Edit</span>
                     </div>
                     <div
-                      onClick={() => navigate(`/recruiter/jobs/${job.id}/applicants`)}
+                      onClick={() =>
+                        navigate(`/recruiter/jobs/${job.id}/applicants`)
+                      }
                       className="flex items-center w-fit gap-2 cursor-pointer mt-2"
                     >
                       <Eye className="w-4" />

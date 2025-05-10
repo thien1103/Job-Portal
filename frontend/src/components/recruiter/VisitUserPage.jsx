@@ -7,88 +7,68 @@ import companyLogo from "../../assets/company_profile_icon.png";
 import educationLogo from "../../assets/education_profile_icon.png";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import axios from "axios";
+import { USER_API_END_POINT } from "@/utils/constant";
 
 const VisitUserPage = () => {
-  const { userId } = useParams(); // Assuming the route includes the userId (e.g., /visit-user/:userId)
-  const [profileData, setProfileData] = useState(null);
-  const [primaryCV, setPrimaryCV] = useState(null);
+  const { userId } = useParams();
+  const [profile, setProfile] = useState(null);
+  const [resumeUrl, setResumeUrl] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Define animation variants for the CV title
   const cvTitleVariants = {
     hover: {
-      scale: 1.05, // Matches the NavItem scale
-      color: "#15803d", // Matches hover:text-green-900 (Tailwind green-900)
-      transition: { duration: 0.2 }, // Matches NavItem transition duration
+      scale: 1.05,
+      color: "#15803d",
+      transition: { duration: 0.2 },
     },
   };
 
   useEffect(() => {
-    // Simulate API calls with fake data for userId = "12345"
-    const mockProfileData = {
-      user: {
-        fullname: "Nguyen Van A",
-        email: "nguyenvana@example.com",
-        phoneNumber: "0901234567",
-        profile: {
-          bio: "A passionate software developer with 3 years of experience.",
-          skills: ["JavaScript", "React", "Node.js", "Python"],
-          experiences: [
-            {
-              company: "Tech Innovations",
-              position: "Software Developer",
-              startDate: "03/2022",
-              endDate: "05/2024",
-            },
-            {
-              company: "StartUp Hub",
-              position: "Junior Developer",
-              startDate: "06/2021",
-              endDate: "02/2022",
-            },
-          ],
-          educations: [
-            {
-              university: "Hanoi University of Science and Technology",
-              major: "Computer Science",
-              startYear: "2017",
-              endYear: "2021",
-            },
-            {
-              university: "Online Coding Academy",
-              major: "Web Development",
-              startYear: "2020",
-              endYear: "2021",
-            },
-          ],
-        },
-      },
-      success: true,
-    };
+    const fetchData = async () => {
+      try {
+        console.log(`Fetching profile and CV for user ID: ${userId}`);
+        console.log(`Profile endpoint: ${USER_API_END_POINT}/applicant/${userId}/profile`);
+        console.log(`CV endpoint: ${USER_API_END_POINT}/applicant/${userId}/primary-cv`);
 
-    const mockPrimaryCVData = {
-      message: "Primary CV retrieved successfully",
-      cv: {
-        fullname: "Nguyen Van A",
-        resume: "https://example.com/resume/nguyenvana.pdf",
-        resumeOriginalName: "Software-Developer_Nguyen-Van-A.pdf",
-      },
-      success: true,
-    };
+        const [profileRes, resumeRes] = await Promise.all([
+          axios.get(`${USER_API_END_POINT}/applicant/${userId}/profile`, {
+            withCredentials: true,
+          }),
+          axios.get(`${USER_API_END_POINT}/applicant/${userId}/primary-cv`, {
+            withCredentials: true,
+          }),
+        ]);
 
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-      if (userId === "12345") {
-        setProfileData(mockProfileData.user);
-        setPrimaryCV(mockPrimaryCVData.cv);
-      } else {
-        setProfileData(null); // Simulate profile not found for other userIds
-        setPrimaryCV(null);
+        console.log('Profile API Response:', profileRes.data);
+        console.log('CV API Response:', resumeRes.data);
+
+        if (profileRes.data.success) {
+          setProfile(profileRes.data.user);
+          console.log('Profile data set:', profileRes.data.user);
+        } else {
+          console.log('Profile fetch failed: success is false');
+          setError('Failed to fetch profile: Success is false');
+        }
+
+        if (resumeRes.data.success) {
+          setResumeUrl(resumeRes.data);
+          console.log('Resume URL set:', resumeRes.data);
+        } else {
+          console.log('CV fetch failed: success is false or no URL found');
+        }
+      } catch (error) {
+        console.error('Error fetching profile or CV:', error.response?.data || error.message);
+        setError(error.response?.data?.message || 'Failed to fetch profile or CV');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 1000); // 1-second delay to mimic API call
+    };
 
-    return () => clearTimeout(timer);
+    if (userId) {
+      fetchData();
+    }
   }, [userId]);
 
   if (loading) {
@@ -99,7 +79,15 @@ const VisitUserPage = () => {
     );
   }
 
-  if (!profileData) {
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto my-10 p-6">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
+
+  if (!profile) {
     return (
       <div className="max-w-4xl mx-auto my-10 p-6">
         <p>Profile not found.</p>
@@ -107,14 +95,18 @@ const VisitUserPage = () => {
     );
   }
 
-  const { fullname, email, phoneNumber, profile } = profileData;
-  const experiences = profile?.experiences || [];
-  const educations = profile?.educations || [];
+  const {
+    fullname,
+    email,
+    phoneNumber,
+    profile: { bio, skills, experiences, educations } = {},
+  } = profile;
 
   return (
     <div>
       <Navbar />
       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
+        {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Avatar className="h-24 w-24">
@@ -125,11 +117,12 @@ const VisitUserPage = () => {
             </Avatar>
             <div>
               <h1 className="font-medium text-xl">{fullname}</h1>
-              <p>{profile?.bio || "No bio available"}</p>
+              <p>{bio || "No bio available"}</p>
             </div>
           </div>
         </div>
 
+        {/* Contact Info */}
         <div className="my-5">
           <div className="flex items-center gap-3 my-2">
             <Mail />
@@ -141,11 +134,12 @@ const VisitUserPage = () => {
           </div>
         </div>
 
+        {/* Skills */}
         <div className="my-5">
           <h1>Skills</h1>
-          <div className="flex items-center gap-1">
-            {profile?.skills?.length ? (
-              profile.skills.map((item, index) => <Badge key={index}>{item}</Badge>)
+          <div className="flex items-center gap-1 flex-wrap">
+            {skills?.length ? (
+              skills.map((item, index) => <Badge key={index}>{item}</Badge>)
             ) : (
               <span>NA</span>
             )}
@@ -155,7 +149,7 @@ const VisitUserPage = () => {
         {/* Experience */}
         <div className="bg-white rounded-2xl my-5 p-4">
           <h1 className="font-bold text-lg">Experience</h1>
-          {experiences.length > 0 ? (
+          {experiences?.length > 0 ? (
             experiences.map((exp, index) => (
               <div key={index} className="flex items-center p-4 border-b">
                 <img src={companyLogo} alt="icon" className="w-10 h-10" />
@@ -175,7 +169,7 @@ const VisitUserPage = () => {
         {/* Education */}
         <div className="bg-white rounded-2xl my-5 p-4">
           <h1 className="font-bold text-lg">Education</h1>
-          {educations.length > 0 ? (
+          {educations?.length > 0 ? (
             educations.map((edu, index) => (
               <div key={index} className="flex items-center p-4 border-b">
                 <img src={educationLogo} alt="icon" className="w-10 h-10" />
@@ -192,11 +186,11 @@ const VisitUserPage = () => {
           )}
         </div>
 
-        {/* CV Cards */}
+        {/* CV Section */}
         <div className="bg-white rounded-lg p-6 shadow mt-5">
           <h2 className="text-2xl font-bold mb-4">CV</h2>
           <div className="text-center mt-4">
-            {primaryCV ? (
+            {resumeUrl?.cv?.resume ? (
               <motion.ul className="grid grid-cols-1 gap-4">
                 <motion.li
                   initial={{ opacity: 0, x: 100 }}
@@ -211,7 +205,6 @@ const VisitUserPage = () => {
                     backgroundRepeat: "no-repeat",
                   }}
                 >
-                  {/* CV avatar and title */}
                   <div className="flex items-start gap-4">
                     <img
                       src="https://cdn-icons-png.flaticon.com/128/4322/4322991.png"
@@ -219,32 +212,45 @@ const VisitUserPage = () => {
                       className="w-12 h-12 rounded-full"
                     />
                     <div className="flex flex-col text-left">
-                      <div className="flex flex-row items-center">
-                        <motion.p
-                          href={primaryCV.resume}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lg font-semibold text-gray-800"
-                          whileHover="hover"
-                          variants={cvTitleVariants}
-                        >
-                          {primaryCV.resumeOriginalName}
-                        </motion.p>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        Full Name: {primaryCV.fullname}
+                      <motion.p
+                        className="text-lg font-semibold text-gray-800"
+                        whileHover="hover"
+                        variants={cvTitleVariants}
+                      >
+                        {resumeUrl.cv.title || "Resume"}
+                      </motion.p>
+                      <p className="text-sm text-gray-500"> {/* Updated classes */}
+                        File: {resumeUrl.cv.resumeOriginalName || "resume.pdf"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Action buttons */}
                   <div className="mt-4 flex justify-end items-center gap-2">
                     <a
-                      href={primaryCV.resume}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded cursor-pointer flex items-center"
-                      download={primaryCV.resumeOriginalName}
+                      className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded cursor-pointer"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        try {
+                          const response = await fetch(resumeUrl.cv.resume);
+                          const blob = await response.blob();
+                          const handle = await window.showSaveFilePicker({
+                            suggestedName: resumeUrl.cv.resumeOriginalName || "resume.pdf",
+                            types: [
+                              {
+                                description: "PDF Files",
+                                accept: { "application/pdf": [".pdf"] },
+                              },
+                            ],
+                          });
+                          const writable = await handle.createWritable();
+                          await writable.write(blob);
+                          await writable.close();
+                        } catch (err) {
+                          if (err.name !== "AbortError") {
+                            console.error("Error saving file:", err);
+                          }
+                        }
+                      }}
                     >
                       <img
                         src="https://cdn-icons-png.flaticon.com/128/10741/10741247.png"
@@ -254,7 +260,7 @@ const VisitUserPage = () => {
                       Download
                     </a>
                     <a
-                      href={primaryCV.resume}
+                      href={resumeUrl.cv.resume}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded cursor-pointer flex items-center"

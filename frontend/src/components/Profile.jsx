@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./shared/Navbar";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
@@ -9,8 +9,11 @@ import AppliedJobTable from "./AppliedJobTable";
 import UpdateProfileDialog from "./UpdateProfileDialog";
 import { useSelector } from "react-redux";
 import useGetAppliedJobs from "@/hooks/useGetAppliedJobs";
-import companyLogo from "../assets/company_profile_icon.png"
-import educationLogo from "../assets/education_profile_icon.png"
+import axios from "axios";
+import companyLogo from "../assets/company_profile_icon.png";
+import educationLogo from "../assets/education_profile_icon.png";
+import { toast, Toaster } from "sonner";
+import { USER_API_END_POINT } from "@/utils/constant";
 
 const Profile = () => {
   useGetAppliedJobs();
@@ -20,96 +23,234 @@ const Profile = () => {
   const [editingExperienceIndex, setEditingExperienceIndex] = useState(null);
   const [editingEducationIndex, setEditingEducationIndex] = useState(null);
 
-  const [experiences, setExperiences] = useState([
-    {
-      id: 1,
-      company: "Apps Cyclone",
-      position: "IT Intern",
-      startDate: "12/2024",
-      endDate: "02/2025",
-    },
-    {
-      id: 2,
-      company: "Tech Solutions",
-      position: "Junior Developer",
-      startDate: "06/2023",
-      endDate: "11/2024",
-    },
-  ]);
+  const [experiences, setExperiences] = useState([]);
+  const [educations, setEducations] = useState([]);
 
-  const [educations, setEducations] = useState([
-    {
-      id: 1,
-      university: "FPT University",
-      major: "Software Engineering",
-      startYear: "2020",
-      endYear: "2024",
-    },
-    {
-      id: 2,
-      university: "National University",
-      major: "Information Technology",
-      startYear: "2018",
-      endYear: "2020",
-    },
-  ]);
+  // Helper function to format date (MMYYYY to MM/YYYY) for experience
+  const formatDate = (input) => {
+    const cleaned = input.replace(/[^0-9]/g, ""); // Remove non-numeric characters
+    if (cleaned.length >= 6) {
+      const month = cleaned.slice(0, 2);
+      const year = cleaned.slice(2, 6);
+      return `${month}/${year}`;
+    }
+    return cleaned;
+  };
 
-  // API helper functions
+  // Fetch experiences and educations on component mount
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      try {
+        const res = await axios.get(`${USER_API_END_POINT}/profile/experience`, {
+          withCredentials: true,
+        });
+        if (res.data.success) {
+          setExperiences(
+            res.data.experience.map((exp) => ({
+              id: exp._id,
+              company: exp.company,
+              position: exp.jobTitle,
+              startDate: new Date(exp.startDate).toLocaleDateString("en-US", {
+                month: "2-digit",
+                year: "numeric",
+              }),
+              endDate: exp.endDate
+                ? new Date(exp.endDate).toLocaleDateString("en-US", {
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "Present",
+              description: exp.description,
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching experiences:", error);
+        toast.error("Failed to fetch experiences.");
+      }
+    };
+
+    const fetchEducations = async () => {
+      try {
+        const res = await axios.get(`${USER_API_END_POINT}/profile/education`, {
+          withCredentials: true,
+        });
+        if (res.data.success) {
+          setEducations(
+            res.data.education.map((edu) => ({
+              id: edu._id,
+              university: edu.institution,
+              major: edu.degree,
+              startYear: new Date(edu.startDate).getFullYear().toString(),
+              endYear: edu.endDate
+                ? new Date(edu.endDate).getFullYear().toString()
+                : "Present",
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching educations:", error);
+        toast.error("Failed to fetch educations.");
+      }
+    };
+
+    fetchExperiences();
+    fetchEducations();
+  }, []);
+
+  // API helper functions with toast notifications
   const addExperienceAPI = async (experience) => {
     try {
-      const res = await fetch("YOUR_ADD_EXPERIENCE_API", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(experience),
+      const [month, year] = experience.startDate.split("/");
+      const startDate = `${year}-${month}-01`; // Default day to 01
+      const endDate =
+        experience.endDate === "Present"
+          ? ""
+          : `${experience.endDate.split("/")[1]}-${experience.endDate.split("/")[0]}-01`; // Default day to 01
+
+      const payload = {
+        jobTitle: experience.position,
+        company: experience.company,
+        startDate,
+        endDate,
+        description: experience.description || "",
+      };
+      const res = await axios.post(`${USER_API_END_POINT}/profile/experience`, payload, {
+        withCredentials: true,
       });
-      return await res.json();
-    } catch (err) {
-      console.error("Error adding experience:", err);
+      if (res.data.success) {
+        toast.success("Experience added successfully!");
+      }
+      return res.data;
+    } catch (error) {
+      console.error("Error adding experience:", error);
+      toast.error("Failed to add experience.");
+      throw error;
     }
   };
 
   const updateExperienceAPI = async (experience) => {
     try {
-      const res = await fetch("YOUR_UPDATE_EXPERIENCE_API", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(experience),
+      const [month, year] = experience.startDate.split("/");
+      const startDate = `${year}-${month}-01`; // Default day to 01
+      const endDate =
+        experience.endDate === "Present"
+          ? ""
+          : `${experience.endDate.split("/")[1]}-${experience.endDate.split("/")[0]}-01`; // Default day to 01
+
+      const payload = {
+        jobTitle: experience.position,
+        company: experience.company,
+        startDate,
+        endDate,
+        description: experience.description || "",
+      };
+      const res = await axios.patch(
+        `${USER_API_END_POINT}/profile/experience/${experience.id}`,
+        payload,
+        {
+          withCredentials: true,
+        }
+      );
+      if (res.data.success) {
+        toast.success("Experience updated successfully!");
+      }
+      return res.data;
+    } catch (error) {
+      console.error("Error updating experience:", error);
+      toast.error("Failed to update experience.");
+      throw error;
+    }
+  };
+
+  const deleteExperienceAPI = async (experienceId) => {
+    try {
+      const res = await axios.delete(`${USER_API_END_POINT}/profile/experience/${experienceId}`, {
+        withCredentials: true,
       });
-      return await res.json();
-    } catch (err) {
-      console.error("Error updating experience:", err);
+      if (res.data.success) {
+        toast.success("Experience deleted successfully!");
+      }
+      return res.data;
+    } catch (error) {
+      console.error("Error deleting experience:", error);
+      toast.error("Failed to delete experience.");
+      throw error;
     }
   };
 
   const addEducationAPI = async (education) => {
     try {
-      const res = await fetch("YOUR_ADD_EDUCATION_API", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(education),
+      const payload = {
+        degree: education.major,
+        institution: education.university,
+        startDate: new Date(education.startYear).toISOString().split("T")[0],
+        endDate: education.endYear === "Present" ? "" : new Date(education.endYear).toISOString().split("T")[0],
+      };
+      const res = await axios.post(`${USER_API_END_POINT}/profile/education`, payload, {
+        withCredentials: true,
       });
-      return await res.json();
-    } catch (err) {
-      console.error("Error adding education:", err);
+      if (res.data.success) {
+        toast.success("Education added successfully!");
+      }
+      return res.data;
+    } catch (error) {
+      console.error("Error adding education:", error);
+      toast.error("Failed to add education.");
+      throw error;
     }
   };
 
   const updateEducationAPI = async (education) => {
     try {
-      const res = await fetch("YOUR_UPDATE_EDUCATION_API", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(education),
+      const payload = {
+        degree: education.major,
+        institution: education.university,
+        startDate: new Date(education.startYear).toISOString().split("T")[0],
+        endDate: education.endYear === "Present" ? "" : new Date(education.endYear).toISOString().split("T")[0],
+      };
+      const res = await axios.patch(
+        `${USER_API_END_POINT}/profile/education/${education.id}`,
+        payload,
+        {
+          withCredentials: true,
+        }
+      );
+      if (res.data.success) {
+        toast.success("Education updated successfully!");
+      }
+      return res.data;
+    } catch (error) {
+      console.error("Error updating education:", error);
+      toast.error("Failed to update education.");
+      throw error;
+    }
+  };
+
+  const deleteEducationAPI = async (educationId) => {
+    try {
+      const res = await axios.delete(`${USER_API_END_POINT}/profile/education/${educationId}`, {
+        withCredentials: true,
       });
-      return await res.json();
-    } catch (err) {
-      console.error("Error updating education:", err);
+      if (res.data.success) {
+        toast.success("Education deleted successfully!");
+      }
+      return res.data;
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      toast.error("Failed to delete education.");
+      throw error;
     }
   };
 
   const handleExperienceChange = (index, field, value) => {
     const updated = [...experiences];
-    updated[index][field] = value;
+    if (field === "startDate" || field === "endDate") {
+      const formattedValue = formatDate(value);
+      updated[index][field] = formattedValue;
+    } else {
+      updated[index][field] = value;
+    }
     setExperiences(updated);
   };
 
@@ -119,18 +260,27 @@ const Profile = () => {
     setEducations(updated);
   };
 
-  const removeExperience = (index) => {
+  const removeExperience = async (index) => {
+    const experienceId = experiences[index].id;
+    if (experienceId) {
+      await deleteExperienceAPI(experienceId);
+    }
     setExperiences((prev) => prev.filter((_, i) => i !== index));
     if (editingExperienceIndex === index) setEditingExperienceIndex(null);
   };
 
-  const removeEducation = (index) => {
+  const removeEducation = async (index) => {
+    const educationId = educations[index].id;
+    if (educationId) {
+      await deleteEducationAPI(educationId);
+    }
     setEducations((prev) => prev.filter((_, i) => i !== index));
     if (editingEducationIndex === index) setEditingEducationIndex(null);
   };
 
   return (
     <div>
+      {/* <Toaster position="top-right" richColors /> */}
       <Navbar />
       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
         <div className="flex justify-between">
@@ -166,9 +316,7 @@ const Profile = () => {
           <h1>Skills</h1>
           <div className="flex items-center gap-1">
             {user?.profile?.skills?.length ? (
-              user.profile.skills.map((item, index) => (
-                <Badge key={index}>{item}</Badge>
-              ))
+              user.profile.skills.map((item, index) => <Badge key={index}>{item}</Badge>)
             ) : (
               <span>NA</span>
             )}
@@ -180,16 +328,9 @@ const Profile = () => {
       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
         <h1 className="font-bold text-lg">Experience</h1>
         {experiences.map((exp, index) => (
-          <div
-            key={index}
-            className="flex justify-between items-center p-4 border-b"
-          >
+          <div key={index} className="flex justify-between items-center p-4 border-b">
             <div className="flex items-center">
-              <img
-                src= {companyLogo}
-                alt="icon"
-                className="w-10 h-10"
-              />
+              <img src={companyLogo} alt="icon" className="w-10 h-10" />
               <div className="ml-4 w-full">
                 {editingExperienceIndex === index ? (
                   <>
@@ -197,17 +338,13 @@ const Profile = () => {
                     <input
                       className="border p-1 rounded w-full mb-2"
                       value={exp.company}
-                      onChange={(e) =>
-                        handleExperienceChange(index, "company", e.target.value)
-                      }
+                      onChange={(e) => handleExperienceChange(index, "company", e.target.value)}
                     />
                     <Label>Position</Label>
                     <input
                       className="border p-1 rounded w-full mb-2"
                       value={exp.position}
-                      onChange={(e) =>
-                        handleExperienceChange(index, "position", e.target.value)
-                      }
+                      onChange={(e) => handleExperienceChange(index, "position", e.target.value)}
                     />
                     <div className="flex gap-2">
                       <div className="w-1/2">
@@ -215,9 +352,8 @@ const Profile = () => {
                         <input
                           className="border p-1 rounded w-full"
                           value={exp.startDate}
-                          onChange={(e) =>
-                            handleExperienceChange(index, "startDate", e.target.value)
-                          }
+                          onChange={(e) => handleExperienceChange(index, "startDate", e.target.value)}
+                          placeholder="MM/YYYY"
                         />
                       </div>
                       <div className="w-1/2">
@@ -225,9 +361,8 @@ const Profile = () => {
                         <input
                           className="border p-1 rounded w-full"
                           value={exp.endDate}
-                          onChange={(e) =>
-                            handleExperienceChange(index, "endDate", e.target.value)
-                          }
+                          onChange={(e) => handleExperienceChange(index, "endDate", e.target.value)}
+                          placeholder="MM/YYYY"
                         />
                       </div>
                     </div>
@@ -248,15 +383,52 @@ const Profile = () => {
                 onClick={async () => {
                   if (editingExperienceIndex === index) {
                     const exp = experiences[index];
-                    if (exp.id) {
-                      await updateExperienceAPI(exp);
-                    } else {
-                      const newExp = await addExperienceAPI(exp);
-                      const updated = [...experiences];
-                      updated[index] = newExp;
-                      setExperiences(updated);
+                    try {
+                      if (exp.id) {
+                        const updatedData = await updateExperienceAPI(exp);
+                        setExperiences(
+                          updatedData.experience.map((e) => ({
+                            id: e._id,
+                            company: e.company,
+                            position: e.jobTitle,
+                            startDate: new Date(e.startDate).toLocaleDateString("en-US", {
+                              month: "2-digit",
+                              year: "numeric",
+                            }),
+                            endDate: e.endDate
+                              ? new Date(e.endDate).toLocaleDateString("en-US", {
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                              : "Present",
+                            description: e.description,
+                          }))
+                        );
+                      } else {
+                        const newExp = await addExperienceAPI(exp);
+                        setExperiences(
+                          newExp.experience.map((e) => ({
+                            id: e._id,
+                            company: e.company,
+                            position: e.jobTitle,
+                            startDate: new Date(e.startDate).toLocaleDateString("en-US", {
+                              month: "2-digit",
+                              year: "numeric",
+                            }),
+                            endDate: e.endDate
+                              ? new Date(e.endDate).toLocaleDateString("en-US", {
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                              : "Present",
+                            description: e.description,
+                          }))
+                        );
+                      }
+                      setEditingExperienceIndex(null);
+                    } catch (error) {
+                      console.error("Error saving experience:", error);
                     }
-                    setEditingExperienceIndex(null);
                   } else {
                     setEditingExperienceIndex(index);
                   }
@@ -275,7 +447,10 @@ const Profile = () => {
         <Button
           className="mt-4 flex items-center gap-2"
           onClick={() => {
-            setExperiences([...experiences, { company: "", position: "", startDate: "", endDate: "" }]);
+            setExperiences([
+              ...experiences,
+              { company: "", position: "", startDate: "", endDate: "Present", description: "" },
+            ]);
             setEditingExperienceIndex(experiences.length);
           }}
         >
@@ -289,11 +464,7 @@ const Profile = () => {
         {educations.map((edu, index) => (
           <div key={index} className="flex justify-between items-center p-4 border-b">
             <div className="flex items-center">
-              <img
-                src={educationLogo}
-                alt="icon"
-                className="w-10 h-10"
-              />
+              <img src={educationLogo} alt="icon" className="w-10 h-10" />
               <div className="ml-4 w-full">
                 {editingEducationIndex === index ? (
                   <>
@@ -301,17 +472,13 @@ const Profile = () => {
                     <input
                       className="border p-1 rounded w-full mb-2"
                       value={edu.university}
-                      onChange={(e) =>
-                        handleEducationChange(index, "university", e.target.value)
-                      }
+                      onChange={(e) => handleEducationChange(index, "university", e.target.value)}
                     />
                     <Label>Major</Label>
                     <input
                       className="border p-1 rounded w-full mb-2"
                       value={edu.major}
-                      onChange={(e) =>
-                        handleEducationChange(index, "major", e.target.value)
-                      }
+                      onChange={(e) => handleEducationChange(index, "major", e.target.value)}
                     />
                     <div className="flex gap-2">
                       <div className="w-1/2">
@@ -319,9 +486,7 @@ const Profile = () => {
                         <input
                           className="border p-1 rounded w-full"
                           value={edu.startYear}
-                          onChange={(e) =>
-                            handleEducationChange(index, "startYear", e.target.value)
-                          }
+                          onChange={(e) => handleEducationChange(index, "startYear", e.target.value)}
                         />
                       </div>
                       <div className="w-1/2">
@@ -329,9 +494,7 @@ const Profile = () => {
                         <input
                           className="border p-1 rounded w-full"
                           value={edu.endYear}
-                          onChange={(e) =>
-                            handleEducationChange(index, "endYear", e.target.value)
-                          }
+                          onChange={(e) => handleEducationChange(index, "endYear", e.target.value)}
                         />
                       </div>
                     </div>
@@ -352,15 +515,38 @@ const Profile = () => {
                 onClick={async () => {
                   if (editingEducationIndex === index) {
                     const edu = educations[index];
-                    if (edu.id) {
-                      await updateEducationAPI(edu);
-                    } else {
-                      const newEdu = await addEducationAPI(edu);
-                      const updated = [...educations];
-                      updated[index] = newEdu;
-                      setEducations(updated);
+                    try {
+                      if (edu.id) {
+                        const updatedData = await updateEducationAPI(edu);
+                        setEducations(
+                          updatedData.education.map((e) => ({
+                            id: e._id,
+                            university: e.institution,
+                            major: e.degree,
+                            startYear: new Date(e.startDate).getFullYear().toString(),
+                            endYear: e.endDate
+                              ? new Date(e.endDate).getFullYear().toString()
+                              : "Present",
+                          }))
+                        );
+                      } else {
+                        const newEdu = await addEducationAPI(edu);
+                        setEducations(
+                          newEdu.education.map((e) => ({
+                            id: e._id,
+                            university: e.institution,
+                            major: e.degree,
+                            startYear: new Date(e.startDate).getFullYear().toString(),
+                            endYear: e.endDate
+                              ? new Date(e.endDate).getFullYear().toString()
+                              : "Present",
+                          }))
+                        );
+                      }
+                      setEditingEducationIndex(null);
+                    } catch (error) {
+                      console.error("Error saving education:", error);
                     }
-                    setEditingEducationIndex(null);
                   } else {
                     setEditingEducationIndex(index);
                   }
@@ -379,7 +565,10 @@ const Profile = () => {
         <Button
           className="mt-4 flex items-center gap-2"
           onClick={() => {
-            setEducations([...educations, { university: "", major: "", startYear: "", endYear: "" }]);
+            setEducations([
+              ...educations,
+              { university: "", major: "", startYear: "", endYear: "Present" },
+            ]);
             setEditingEducationIndex(educations.length);
           }}
         >
@@ -399,380 +588,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
-
-// import React, { useState } from "react";
-// import Navbar from "./shared/Navbar";
-// import { Avatar, AvatarImage } from "./ui/avatar";
-// import { Button } from "./ui/button";
-// import { Contact, Mail, Pen, Check, Trash } from "lucide-react";
-// import { Badge } from "./ui/badge";
-// import { Label } from "./ui/label";
-// import AppliedJobTable from "./AppliedJobTable";
-// import UpdateProfileDialog from "./UpdateProfileDialog";
-// import { useSelector } from "react-redux";
-// import useGetAppliedJobs from "@/hooks/useGetAppliedJobs";
-
-// const Profile = () => {
-//   useGetAppliedJobs();
-//   const [open, setOpen] = useState(false);
-//   const { user } = useSelector((store) => store.auth);
-
-//   const [editingExperienceIndex, setEditingExperienceIndex] = useState(null);
-//   const [editingEducationIndex, setEditingEducationIndex] = useState(null);
-
-//   const [experiences, setExperiences] = useState([
-//     {
-//       company: "Apps Cyclone",
-//       position: "IT Intern",
-//       startDate: "12/2024",
-//       endDate: "02/2025",
-//     },
-//     {
-//       company: "Tech Solutions",
-//       position: "Junior Developer",
-//       startDate: "06/2023",
-//       endDate: "11/2024",
-//     },
-//   ]);
-
-//   const [educations, setEducations] = useState([
-//     {
-//       university: "FPT University",
-//       major: "Software Engineering",
-//       startYear: "2020",
-//       endYear: "2024",
-//     },
-//     {
-//       university: "National University",
-//       major: "Information Technology",
-//       startYear: "2018",
-//       endYear: "2020",
-//     },
-//   ]);
-
-//   const handleExperienceChange = (index, field, value) => {
-//     const updated = [...experiences];
-//     updated[index][field] = value;
-//     setExperiences(updated);
-//   };
-
-//   const handleEducationChange = (index, field, value) => {
-//     const updated = [...educations];
-//     updated[index][field] = value;
-//     setEducations(updated);
-//   };
-
-//   const removeExperience = (index) => {
-//     setExperiences((prev) => prev.filter((_, i) => i !== index));
-//     if (editingExperienceIndex === index) setEditingExperienceIndex(null);
-//   };
-
-//   const removeEducation = (index) => {
-//     setEducations((prev) => prev.filter((_, i) => i !== index));
-//     if (editingEducationIndex === index) setEditingEducationIndex(null);
-//   };
-
-//   return (
-//     <div>
-//       <Navbar />
-//       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
-//         <div className="flex justify-between">
-//           <div className="flex items-center gap-4">
-//             <Avatar className="h-24 w-24">
-//               <AvatarImage
-//                 src="https://www.shutterstock.com/image-vector/circle-line-simple-design-logo-600nw-2174926871.jpg"
-//                 alt="profile"
-//               />
-//             </Avatar>
-//             <div>
-//               <h1 className="font-medium text-xl">{user?.fullname}</h1>
-//               <p>{user?.profile?.bio}</p>
-//             </div>
-//           </div>
-//           <Button
-//             onClick={() => setOpen(true)}
-//             className="text-right"
-//             variant="outline"
-//           >
-//             <Pen />
-//           </Button>
-//         </div>
-//         <div className="my-5">
-//           <div className="flex items-center gap-3 my-2">
-//             <Mail />
-//             <span>{user?.email}</span>
-//           </div>
-//           <div className="flex items-center gap-3 my-2">
-//             <Contact />
-//             <span>{user?.phoneNumber}</span>
-//           </div>
-//         </div>
-//         <div className="my-5">
-//           <h1>Skills</h1>
-//           <div className="flex items-center gap-1">
-//             {user?.profile?.skills?.length ? (
-//               user?.profile?.skills.map((item, index) => (
-//                 <Badge key={index}>{item}</Badge>
-//               ))
-//             ) : (
-//               <span>NA</span>
-//             )}
-//           </div>
-//         </div>
-      
-//       </div>
-
-//       {/* Kinh nghiệm Section */}
-//       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
-//         <h1 className="font-bold text-lg">Kinh nghiệm</h1>
-//         {experiences.map((exp, index) => (
-//           <div
-//             key={index}
-//             className="flex justify-between items-center p-4 border-b"
-//           >
-//             <div className="flex items-center">
-//               <img
-//                 src="https://www.vhv.rs/dpng/d/598-5982089_icon-blue-company-icon-png-transparent-png.png"
-//                 alt="icon"
-//                 className="w-10 h-10"
-//               />
-//               <div className="ml-4 w-full">
-//                 {editingExperienceIndex === index ? (
-//                   <>
-//                   <div className="mb-2">
-//                     <Label>Company</Label>
-//                     <input
-//                         className="border p-1 rounded w-full"
-//                         value={exp.company}
-//                         onChange={(e) =>
-//                         handleExperienceChange(index, "company", e.target.value)
-//                         }
-//                         placeholder="e.g., Google, ABC Corp"
-//                     />
-//                     </div>
-
-
-//                     <div className="mb-2">
-//                     <Label>Position</Label>
-//                     <input
-//                       className="border p-1 rounded w-full mb-1"
-//                       value={exp.position}
-//                       onChange={(e) =>
-//                         handleExperienceChange(
-//                           index,
-//                           "position",
-//                           e.target.value
-//                         )
-//                       }
-//                       placeholder="e.g., Fullstack Developer"
-//                     />
-//                     </div>
-
-
-//                     <div className="flex gap-2">
-//                     <div className="mt-2">
-//                     <Label>Start Date  </Label>
-//                       <input
-//                         className="border p-1 rounded w-1/2"
-//                         value={exp.startDate}
-//                         onChange={(e) =>
-//                           handleExperienceChange(
-//                             index,
-//                             "startDate",
-//                             e.target.value
-//                           )
-//                         }
-//                         placeholder="e.g., 03/2025"
-//                       />
-//                       </div>
-
-//                       <div className="mt-2">
-//                     <Label>End Date  </Label>
-//                       <input
-//                         className="border p-1 rounded w-1/2"
-//                         value={exp.endDate}
-//                         onChange={(e) =>
-//                           handleExperienceChange(
-//                             index,
-//                             "endDate",
-//                             e.target.value
-//                           )
-//                         }
-//                         placeholder="e.g., 03/2025"
-//                       />
-//                       </div>
-//                     </div>
-//                   </>
-//                 ) : (
-//                   <>
-//                     <p className="font-semibold">{exp.company}</p>
-//                     <p className="text-sm">
-//                       {exp.position} | {exp.startDate} - {exp.endDate}
-//                     </p>
-//                   </>
-//                 )}
-//               </div>
-//             </div>
-//             <div className="flex gap-2">
-//               <Button
-//                 variant="outline"
-//                 onClick={() =>
-//                   setEditingExperienceIndex(
-//                     editingExperienceIndex === index ? null : index
-//                   )
-//                 }
-//               >
-//                 {editingExperienceIndex === index ? <Check /> : <Pen />}
-//               </Button>
-//               {editingExperienceIndex === index && (
-//                 <Button
-//                   variant="destructive"
-//                   onClick={() => removeExperience(index)}
-//                 >
-//                   <Trash />
-//                 </Button>
-//               )}
-//             </div>
-//           </div>
-//         ))}
-//         <Button
-//           className="mt-4 flex items-center gap-2"
-//           onClick={() => {
-//             setExperiences([
-//               ...experiences,
-//               { company: "", position: "", startDate: "", endDate: "" },
-//             ]);
-//             setEditingExperienceIndex(experiences.length);
-//           }}
-//         >
-//          + Add Experience
-//         </Button>
-//       </div>
-
-//       {/* Học vấn Section */}
-// <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
-//   <h1 className="font-bold text-lg">Học vấn</h1>
-//   {educations.map((edu, index) => (
-//     <div
-//       key={index}
-//       className="flex justify-between items-center p-4 border-b"
-//     >
-//       <div className="flex items-center">
-//         <img
-//           src="https://www.pngkey.com/png/full/131-1311026_graduate-school-icon-university-icon-blue.png"
-//           alt="icon"
-//           className="w-10 h-10"
-//         />
-//         <div className="ml-4 w-full">
-//           {editingEducationIndex === index ? (
-//             <>
-//               <div className="mb-2">
-//                 <Label>University</Label>
-//                 <input
-//                   className="border p-1 rounded w-full"
-//                   value={edu.university}
-//                   onChange={(e) =>
-//                     handleEducationChange(index, "university", e.target.value)
-//                   }
-//                   placeholder="e.g., FPT University"
-//                 />
-//               </div>
-
-//               <div className="mb-2">
-//                 <Label>Major</Label>
-//                 <input
-//                   className="border p-1 rounded w-full"
-//                   value={edu.major}
-//                   onChange={(e) =>
-//                     handleEducationChange(index, "major", e.target.value)
-//                   }
-//                   placeholder="e.g., Software Engineering"
-//                 />
-//               </div>
-
-//               <div className="flex gap-2">
-//                 <div className="mt-2 w-1/2">
-//                   <Label>Start Year</Label>
-//                   <input
-//                     className="border p-1 rounded w-full"
-//                     value={edu.startYear}
-//                     onChange={(e) =>
-//                       handleEducationChange(index, "startYear", e.target.value)
-//                     }
-//                     placeholder="e.g., 2020"
-//                   />
-//                 </div>
-//                 <div className="mt-2 w-1/2">
-//                   <Label>End Year</Label>
-//                   <input
-//                     className="border p-1 rounded w-full"
-//                     value={edu.endYear}
-//                     onChange={(e) =>
-//                       handleEducationChange(index, "endYear", e.target.value)
-//                     }
-//                     placeholder="e.g., 2024"
-//                   />
-//                 </div>
-//               </div>
-//             </>
-//           ) : (
-//             <>
-//               <p className="font-semibold">{edu.university}</p>
-//               <p className="text-sm">
-//                 {edu.major} | {edu.startYear} - {edu.endYear}
-//               </p>
-//             </>
-//           )}
-//         </div>
-//       </div>
-//       <div className="flex gap-2">
-//         <Button
-//           variant="outline"
-//           onClick={() =>
-//             setEditingEducationIndex(
-//               editingEducationIndex === index ? null : index
-//             )
-//           }
-//         >
-//           {editingEducationIndex === index ? <Check /> : <Pen />}
-//         </Button>
-//         {editingEducationIndex === index && (
-//           <Button
-//             variant="destructive"
-//             onClick={() => removeEducation(index)}
-//           >
-//             <Trash />
-//           </Button>
-//         )}
-//       </div>
-//     </div>
-//   ))}
-//   <Button
-//     className="mt-4 flex items-center gap-2"
-//     onClick={() => {
-//       setEducations([
-//         ...educations,
-//         { university: "", major: "", startYear: "", endYear: "" },
-//       ]);
-//       setEditingEducationIndex(educations.length);
-//     }}
-//   >
-//     + Add Education
-//   </Button>
-// </div>
-
-
-//       {/* Applied Job Section */}
-//       <div className="max-w-4xl mx-auto bg-white rounded-2xl mt-9 mb-9">
-//         <h1 className="font-bold text-lg my-5">Applied Jobs</h1>
-//         <AppliedJobTable />
-//       </div>
-//       <UpdateProfileDialog open={open} setOpen={setOpen} />
-//     </div>
-//   );
-// };
-
-// export default Profile;
-
-

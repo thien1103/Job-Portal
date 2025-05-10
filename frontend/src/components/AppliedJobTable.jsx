@@ -1,37 +1,84 @@
-import React from 'react'
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
-import { Badge } from './ui/badge'
-import { useSelector } from 'react-redux'
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import axios from "axios";
+import { setAllAppliedJobs, setLoading, setError } from "@/redux/jobSlice";
+import { APPLICATION_API_END_POINT } from "@/utils/constant";
 
 const AppliedJobTable = () => {
-    const {allAppliedJobs} = useSelector(store=>store.job);
-    return (
-        <div>
-            <Table>
-                <TableCaption>A list of your applied jobs</TableCaption>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Job Role</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead className="text-right">Status</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {
-                        allAppliedJobs.length <= 0 ? <span>You haven't applied any job yet.</span> : allAppliedJobs.map((appliedJob) => (
-                            <TableRow key={appliedJob._id}>
-                                <TableCell>{appliedJob?.createdAt?.split("T")[0]}</TableCell>
-                                <TableCell>{appliedJob.job?.title}</TableCell>
-                                <TableCell>{appliedJob.job?.company?.name}</TableCell>
-                                <TableCell className="text-right"><Badge className={`${appliedJob?.status === "rejected" ? 'bg-red-400' : appliedJob.status === 'pending' ? 'bg-gray-400' : 'bg-green-400'}`}>{appliedJob.status.toUpperCase()}</Badge></TableCell>
-                            </TableRow>
-                        ))
-                    }
-                </TableBody>
-            </Table>
-        </div>
-    )
-}
+  const dispatch = useDispatch();
+  const { allAppliedJobs: appliedJobs } = useSelector((store) => store.job);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-export default AppliedJobTable
+  useEffect(() => {
+    const fetchAppliedJobs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`${APPLICATION_API_END_POINT}/get`, {
+          withCredentials: true,
+        });
+        console.log("Fetched applications:", response.data.applications);
+        dispatch(setAllAppliedJobs(response.data.applications));
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to fetch applied jobs");
+        console.error("Error fetching applied jobs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppliedJobs();
+  }, []); // Empty dependency array to run once
+
+  // Log state changes to debug
+  console.log("Current appliedJobs:", appliedJobs);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+
+  return (
+    <div>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="border p-2">Job Title</th>
+            <th className="border p-2">Company</th>
+            <th className="border p-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {appliedJobs?.length > 0 ? (
+            appliedJobs.map((job) => (
+              <tr key={job.id} className="hover:bg-gray-100">
+                <td className="border p-2 text-center">{job.job.title}</td>
+                <td className="border p-2 text-center">{job.job.company.name}</td>
+                <td
+                  className={`border p-2 text-center ${
+                    job.status === "pending"
+                      ? "text-orange-500"
+                      : job.status === "rejected"
+                      ? "text-red-500"
+                      : job.status === "accepted"
+                      ? "text-green-500"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {job.status}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="3" className="border p-2 text-center">
+                No jobs applied yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default AppliedJobTable;

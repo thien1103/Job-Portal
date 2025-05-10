@@ -1,35 +1,36 @@
-import { setAllRecruiterJobs, setLoading, setError } from '@/redux/jobSlice';
-import { JOB_API_END_POINT } from '@/utils/constant';
-import axios from 'axios';
+// hooks/useGetAllRecruiterJobs.js (assumed)
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { toast } from 'sonner';
+import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
+import { JOB_API_END_POINT } from '@/utils/constant';
+import { setAllRecruiterJobs, setLoading, setError } from '@/redux/jobSlice';
 
 const useGetAllRecruiterJobs = () => {
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
+  const { allRecruiterJobs } = useSelector((state) => state.job);
 
-    useEffect(() => {
-        const fetchAllRecruiterJobs = async () => {
-            dispatch(setLoading(true));
-            try {
-                const res = await axios.get(`${JOB_API_END_POINT}/recruiter`, { withCredentials: true });
-                if (res.data.success) {
-                    dispatch(setAllRecruiterJobs(res.data.jobs));
-                }
-            } catch (error) {
-                if (error.response?.status === 404) {
-                    dispatch(setAllRecruiterJobs([])); // Clear jobs on 404
-                    dispatch(setError('No Job Found'));
-                } else {
-                    dispatch(setError(error.response?.data?.message || 'Failed to fetch jobs'));
-                    toast.error(error.response?.data?.message || 'Failed to load jobs. Check server status.');
-                }
-            } finally {
-                dispatch(setLoading(false));
-            }
-        };
-        fetchAllRecruiterJobs();
-    }, [dispatch]);
+  useEffect(() => {
+    const fetchRecruiterJobs = async () => {
+      try {
+        console.log('Fetching all recruiter jobs');
+        dispatch(setLoading(true));
+        const res = await axios.get(`${JOB_API_END_POINT}/recruiter`, { withCredentials: true });
+        console.log('Recruiter Jobs API Response:', res.data);
+        if (res.data.success) {
+          dispatch(setAllRecruiterJobs(res.data.jobs));
+          console.log('Recruiter jobs dispatched to Redux:', res.data.jobs);
+        }
+      } catch (error) {
+        console.error('Error fetching recruiter jobs:', error.response?.data || error.message);
+        dispatch(setError(error.response?.data?.message || 'Failed to fetch jobs'));
+      } finally {
+        dispatch(setLoading(false));
+      }
+    };
+    fetchRecruiterJobs();
+  }, [dispatch]);
+
+  return allRecruiterJobs;
 };
 
 export default useGetAllRecruiterJobs;
