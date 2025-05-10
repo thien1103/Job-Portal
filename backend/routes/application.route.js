@@ -5,7 +5,7 @@ import { singleUpload } from "../middlewares/multer.js";
 
 const router = express.Router();
 
-router.get("/apply/:id", isAuthenticated, isApplicant, singleUpload, applyJob);
+router.post("/apply/:id", isAuthenticated, isApplicant, singleUpload, applyJob);
 router.get("/get", isAuthenticated, isApplicant, getAppliedJobs);
 // router.get("/:id/applicants", isAuthenticated, isRecruiter, getApplicants);
 router.post("/status/:id/update", isAuthenticated, isRecruiter, updateStatus);
