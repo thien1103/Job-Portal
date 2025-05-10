@@ -472,4 +472,141 @@ export const getRecruiterJobs = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
+
+export const getJobApplicants = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const jobId = req.params.id;
+        if (!jobId) {
+            throw createError("Job ID is required", 400);
+        }
+
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError("Job not found", 404);
+        }
+
+        const company = await Company.findOne({ userId });
+        if (!company || job.company.toString() !== company._id.toString()) {
+            throw createError("You are not authorized to view applications for this job", 403);
+        }
+
+        const applications = await Application.find({ job: jobId })
+            .sort({ createdAt: -1 })
+            .populate({
+                path: "applicant",
+                select: "_id fullname email"
+            })
+            .populate({
+                path: "job",
+                select: "title company",
+                populate: {
+                    path: "company",
+                    select: "name contactInfo"
+                }
+            });
+
+        if (!applications || applications.length === 0) {
+            throw createError("No applications found for this job", 404);
+        }
+
+        const applicantsFromApplication = applications.map(app => ({
+            applicationId: app._id,
+            applicant: app.applicant, 
+            job: {
+                title: app.job.title,
+                company: {
+                    name: app.job.company.name,
+                    contactInfo: app.job.company.contactInfo
+                }
+            }
+        }));
+
+        return res.status(200).json({
+            message: "Applicants retrieved successfully",
+            applications: applicantsFromApplication,
+            success: true
+        });
+    } catch (error) {
+        console.log("Error getJobApplicants controller: ", error);
+        next(error);
+    }
+};
+
+export const getApplicationDetails = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { applicationId } = req.params;
+        const jobId = req.params.id;
+
+        // Validate parameters
+        if (!jobId || !applicationId) {
+            throw createError("Job ID and Application ID are required", 400);
+        }
+
+        // Check job existence
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError("Job not found", 404);
+        }
+
+        // Check recruiter authorization
+        const company = await Company.findOne({ userId });
+        if (!company || job.company.toString() !== company._id.toString()) {
+            throw createError("You are not authorized to view this application", 403);
+        }
+
+        // Fetch application details
+        const application = await Application.findById(applicationId)
+            .populate({
+                path: "applicant",
+                select: "_id fullname email"
+            })
+            .populate({
+                path: "job",
+                select: "title company",
+                populate: {
+                    path: "company",
+                    select: "name contactInfo"
+                }
+            });
+
+        if (!application) {
+            throw createError("Application not found", 404);
+        }
+
+        // Verify application belongs to the job
+        if (application.job._id.toString() !== jobId) {
+            throw createError("This application does not belong to the specified job", 403);
+        }
+
+        // Format and return response
+        const responseData = {
+            id: application._id,
+            applicant: application.applicant,
+            resume: application.resume,
+            coverLetter: application.coverLetter
+                ? application.coverLetter.split("\n").map(line => line.trim()).filter(line => line)
+                : [],
+            status: application.status,
+            appliedAt: application.createdAt,
+            updatedAt: application.updatedAt,
+            job: {
+                title: application.job.title,
+                company: {
+                    name: application.job.company.name,
+                    contactInfo: application.job.company.contactInfo
+                }
+            }
+        };
+
+        return res.status(200).json({
+            message: "Application details retrieved successfully",
+            application: responseData,
+            success: true
+        });
+    } catch (error) {
+        next(error);
+    }
+};
