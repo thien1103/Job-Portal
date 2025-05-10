@@ -32,9 +32,16 @@ export const applyJob = async (req, res, next) => {
             throw createError("PDF file is required", 400);
         }
 
+        const allowedMimeTypes = ["application/pdf"];
+        const fileExtension = file.originalname.split(".").pop().toLowerCase();
+        if (!allowedMimeTypes.includes(file.mimetype) || fileExtension !== "pdf") {
+            throw createError("Only PDF files are allowed", 400);
+        }
+
         const fileUri = getDataUri(req.file);
         const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
             resource_type: "raw",
+            format: "pdf"
         });
 
         let finalCoverLetter = "";
