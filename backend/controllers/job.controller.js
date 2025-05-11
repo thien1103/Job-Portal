@@ -2,6 +2,7 @@ import { Job } from "../models/job.model.js";
 import { createError } from "../utils/appError.js";
 import { Company } from "../models/company.model.js";
 import { Application } from "../models/application.model.js";
+import { User } from "../models/user.model.js";
 
 export const postJob = async (req, res, next) => {
     try {
@@ -540,24 +541,20 @@ export const getApplicationDetails = async (req, res, next) => {
         const { applicationId } = req.params;
         const jobId = req.params.id;
 
-        // Validate parameters
         if (!jobId || !applicationId) {
             throw createError("Job ID and Application ID are required", 400);
         }
 
-        // Check job existence
         const job = await Job.findById(jobId);
         if (!job) {
             throw createError("Job not found", 404);
         }
 
-        // Check recruiter authorization
         const company = await Company.findOne({ userId });
         if (!company || job.company.toString() !== company._id.toString()) {
             throw createError("You are not authorized to view this application", 403);
         }
 
-        // Fetch application details
         const application = await Application.findById(applicationId)
             .populate({
                 path: "applicant",
@@ -576,12 +573,10 @@ export const getApplicationDetails = async (req, res, next) => {
             throw createError("Application not found", 404);
         }
 
-        // Verify application belongs to the job
         if (application.job._id.toString() !== jobId) {
             throw createError("This application does not belong to the specified job", 403);
         }
 
-        // Format and return response
         const responseData = {
             id: application._id,
             applicant: application.applicant,
@@ -610,3 +605,38 @@ export const getApplicationDetails = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getApplicantDetails = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const applicantId = req.params.id;
+
+        if (!applicantId) {
+            throw createError("Job ID and Application ID are required", 400);
+        }
+
+        const recruiter = await Company.findOne({ userId }).select("userId");
+        if (!recruiter) {
+            throw createError("You are not authorized to access applicant details", 403);
+        }
+
+
+        const applicant = await User.findById(applicantId).select("-password");
+        if (!applicant) {
+            throw createError("Applicant not found", 404);
+        }
+
+        if (!applicant.profile.isPublic) {
+            throw createError("This applicant's profile is not public", 403);
+        }
+
+        return res.status(200).json({
+            message: "Profile retrieved successfully",
+            user: applicant,
+            success: true
+        });
+    } catch (error) {
+        console.log("Error getApplicantDetails controller: ", error);
+        throw createError(error);
+    }
+}
