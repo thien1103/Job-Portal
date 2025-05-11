@@ -1,9 +1,9 @@
-// hooks/useGetAllRecruiterJobs.js (assumed)
+// hooks/useGetAllRecruiterJobs.js
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { JOB_API_END_POINT } from '@/utils/constant';
-import { setAllRecruiterJobs, setLoading, setError } from '@/redux/jobSlice';
+import { setAllRecruiterJobs, setLoading } from '@/redux/jobSlice';
 
 const useGetAllRecruiterJobs = () => {
   const dispatch = useDispatch();
@@ -22,7 +22,7 @@ const useGetAllRecruiterJobs = () => {
         }
       } catch (error) {
         console.error('Error fetching recruiter jobs:', error.response?.data || error.message);
-        dispatch(setError(error.response?.data?.message || 'Failed to fetch jobs'));
+        // No error state set; log only for debugging
       } finally {
         dispatch(setLoading(false));
       }

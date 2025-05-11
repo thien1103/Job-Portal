@@ -8,14 +8,19 @@ import educationLogo from "../../assets/education_profile_icon.png";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
-import { USER_API_END_POINT } from "@/utils/constant";
+import { USER_API_END_POINT, JOB_API_END_POINT } from "@/utils/constant";
+import { format } from "date-fns"; // Import date-fns for formatting dates
 
 const VisitUserPage = () => {
   const { userId } = useParams();
   const [profile, setProfile] = useState(null);
   const [resumeUrl, setResumeUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingCV, setLoadingCV] = useState(true);
+  const [errorProfile, setErrorProfile] = useState(null);
+  const [errorCV, setErrorCV] = useState(null);
+  const [retryCountProfile, setRetryCountProfile] = useState(0);
+  const [retryCountCV, setRetryCountCV] = useState(0);
 
   const cvTitleVariants = {
     hover: {
@@ -25,53 +30,104 @@ const VisitUserPage = () => {
     },
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log(`Fetching profile and CV for user ID: ${userId}`);
-        console.log(`Profile endpoint: ${USER_API_END_POINT}/applicant/${userId}/profile`);
-        console.log(`CV endpoint: ${USER_API_END_POINT}/applicant/${userId}/primary-cv`);
+  const clearCookies = () => {
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+  };
 
-        const [profileRes, resumeRes] = await Promise.all([
-          axios.get(`${USER_API_END_POINT}/applicant/${userId}/profile`, {
-            withCredentials: true,
-          }),
-          axios.get(`${USER_API_END_POINT}/applicant/${userId}/primary-cv`, {
-            withCredentials: true,
-          }),
-        ]);
+  const fetchProfile = async (retry = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 2 ** retry * 1000; // Exponential backoff: 1s, 2s, 4s
 
-        console.log('Profile API Response:', profileRes.data);
-        console.log('CV API Response:', resumeRes.data);
+    try {
+      setLoadingProfile(true);
+      setErrorProfile(null);
+      console.log(`Fetching profile for user ID: ${userId} (Retry ${retry})`);
+      console.log(`Profile endpoint: ${JOB_API_END_POINT}/applications/${userId}`);
 
-        if (profileRes.data.success) {
-          setProfile(profileRes.data.user);
-          console.log('Profile data set:', profileRes.data.user);
-        } else {
-          console.log('Profile fetch failed: success is false');
-          setError('Failed to fetch profile: Success is false');
-        }
+      const response = await axios.get(`${JOB_API_END_POINT}/applications/${userId}`, {
+        withCredentials: true,
+        timeout: 5000, // 5 seconds timeout
+      });
 
-        if (resumeRes.data.success) {
-          setResumeUrl(resumeRes.data);
-          console.log('Resume URL set:', resumeRes.data);
-        } else {
-          console.log('CV fetch failed: success is false or no URL found');
-        }
-      } catch (error) {
-        console.error('Error fetching profile or CV:', error.response?.data || error.message);
-        setError(error.response?.data?.message || 'Failed to fetch profile or CV');
-      } finally {
-        setLoading(false);
+      if (response.data && response.data.success) {
+        setProfile(response.data.user || null);
+        console.log('Profile data set:', response.data.user);
+      } else {
+        console.log('Profile fetch failed: Invalid response format');
+        setErrorProfile('Failed to fetch profile: Invalid response');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching profile:', error.message || error);
+      if (retry < maxRetries && (error.response?.status === 502 || error.code === 'ECONNABORTED')) {
+        console.log(`Retrying profile fetch in ${retryDelay / 1000}s...`);
+        setTimeout(() => fetchProfile(retry + 1), retryDelay);
+      } else {
+        setErrorProfile(error.response?.data?.message || 'Failed to fetch profile: Server error');
+      }
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const fetchCV = async (retry = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 2 ** retry * 1000; // Exponential backoff: 1s, 2s, 4s
+
+    try {
+      setLoadingCV(true);
+      setErrorCV(null);
+      console.log(`Fetching CV for user ID: ${userId} (Retry ${retry})`);
+      console.log(`CV endpoint: ${USER_API_END_POINT}/applicant/${userId}/primary-cv`);
+
+      const response = await axios.get(`${USER_API_END_POINT}/applicant/${userId}/primary-cv`, {
+        withCredentials: true,
+        timeout: 5000, // 5 seconds timeout
+      });
+
+      if (response.data && response.data.success) {
+        setResumeUrl(response.data);
+        console.log('Resume URL set:', response.data);
+      } else {
+        console.log('CV fetch failed: Invalid response format');
+        setErrorCV('Failed to fetch CV: Invalid response');
+      }
+    } catch (error) {
+      console.error('Error fetching CV:', error.message || error);
+      if (retry < maxRetries && (error.response?.status === 502 || error.code === 'ECONNABORTED')) {
+        console.log(`Retrying CV fetch in ${retryDelay / 1000}s...`);
+        setTimeout(() => fetchCV(retry + 1), retryDelay);
+      } else {
+        setErrorCV(error.response?.data?.message || 'Failed to fetch CV: Server error');
+      }
+    } finally {
+      setLoadingCV(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
 
     if (userId) {
-      fetchData();
+      setProfile(null);
+      setResumeUrl(null);
+      setErrorProfile(null);
+      setErrorCV(null);
+      setRetryCountProfile(0);
+      setRetryCountCV(0);
+      fetchProfile();
+      fetchCV();
     }
+
+    return () => {
+      isMounted = false; // Cleanup on unmount
+    };
   }, [userId]);
 
-  if (loading) {
+  if (loadingProfile || loadingCV) {
     return (
       <div className="max-w-4xl mx-auto my-10 p-6">
         <p>Loading...</p>
@@ -79,10 +135,23 @@ const VisitUserPage = () => {
     );
   }
 
-  if (error) {
+  if (errorProfile) {
     return (
       <div className="max-w-4xl mx-auto my-10 p-6">
-        <p>Error: {error}</p>
+        <div className="bg-red-100 rounded-lg p-6 text-center">
+          <p>Error fetching profile: {errorProfile}</p>
+          <button
+            onClick={() => {
+              setErrorProfile(null);
+              setProfile(null);
+              clearCookies(); // Clear cookies to reset session
+              fetchProfile(); // Retry profile fetch
+            }}
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Retry Profile
+          </button>
+        </div>
       </div>
     );
   }
@@ -90,7 +159,14 @@ const VisitUserPage = () => {
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto my-10 p-6">
-        <p>Profile not found.</p>
+        <div className="bg-green-100 rounded-lg p-6 text-center">
+          <span className="text-gray-500">Profile not found.</span>
+          <img
+            src="https://cdn-icons-png.flaticon.com/128/11029/11029675.png"
+            alt="unpublicProfile"
+            className="mt-4 mx-auto w-32 h-32"
+          />
+        </div>
       </div>
     );
   }
@@ -99,8 +175,38 @@ const VisitUserPage = () => {
     fullname,
     email,
     phoneNumber,
-    profile: { bio, skills, experiences, educations } = {},
+    profile: { bio, skills, experience: experiences, education: educations, isPublic } = {},
   } = profile;
+
+  if (!isPublic) {
+    return (
+      <div className="max-w-4xl mx-auto my-10 p-6">
+        <div className="bg-green-100 rounded-lg p-6 text-center">
+          <span className="text-gray-500">Profile is not public.</span>
+          <img
+            src="https://cdn-icons-png.flaticon.com/128/11029/11029675.png"
+            alt="unpublicProfile"
+            className="mt-4 mx-auto w-32 h-32"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const formattedExperiences = experiences?.map(exp => ({
+    ...exp,
+    position: exp.jobTitle,
+    startDate: exp.startDate ? format(new Date(exp.startDate), "MMM yyyy") : "",
+    endDate: exp.endDate ? format(new Date(exp.endDate), "MMM yyyy") : "Present",
+  })) || [];
+
+  const formattedEducations = educations?.map(edu => ({
+    ...edu,
+    university: edu.institution,
+    major: edu.degree,
+    startYear: edu.startDate ? new Date(edu.startDate).getFullYear() : "",
+    endYear: edu.endDate ? new Date(edu.endDate).getFullYear() : "Present",
+  })) || [];
 
   return (
     <div>
@@ -149,14 +255,14 @@ const VisitUserPage = () => {
         {/* Experience */}
         <div className="bg-white rounded-2xl my-5 p-4">
           <h1 className="font-bold text-lg">Experience</h1>
-          {experiences?.length > 0 ? (
-            experiences.map((exp, index) => (
+          {formattedExperiences.length > 0 ? (
+            formattedExperiences.map((exp, index) => (
               <div key={index} className="flex items-center p-4 border-b">
                 <img src={companyLogo} alt="icon" className="w-10 h-10" />
                 <div className="ml-4">
                   <p className="font-semibold">{exp.company}</p>
                   <p className="text-sm">
-                    {exp.position} | {exp.startDate} - {exp.endDate || "Present"}
+                    {exp.position} | {exp.startDate} - {exp.endDate}
                   </p>
                 </div>
               </div>
@@ -169,14 +275,14 @@ const VisitUserPage = () => {
         {/* Education */}
         <div className="bg-white rounded-2xl my-5 p-4">
           <h1 className="font-bold text-lg">Education</h1>
-          {educations?.length > 0 ? (
-            educations.map((edu, index) => (
+          {formattedEducations.length > 0 ? (
+            formattedEducations.map((edu, index) => (
               <div key={index} className="flex items-center p-4 border-b">
                 <img src={educationLogo} alt="icon" className="w-10 h-10" />
                 <div className="ml-4">
                   <p className="font-semibold">{edu.university}</p>
                   <p className="text-sm">
-                    {edu.major} | {edu.startYear} - {edu.endYear || "Present"}
+                    {edu.major} | {edu.startYear} - {edu.endYear}
                   </p>
                 </div>
               </div>
@@ -190,7 +296,21 @@ const VisitUserPage = () => {
         <div className="bg-white rounded-lg p-6 shadow mt-5">
           <h2 className="text-2xl font-bold mb-4">CV</h2>
           <div className="text-center mt-4">
-            {resumeUrl?.cv?.resume ? (
+            {errorCV ? (
+              <div>
+                <span className="text-gray-500">Error fetching CV: {errorCV}</span>
+                <button
+                  onClick={() => {
+                    setErrorCV(null);
+                    clearCookies(); // Clear cookies to reset session
+                    fetchCV(); // Retry CV fetch
+                  }}
+                  className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                  Retry CV
+                </button>
+              </div>
+            ) : resumeUrl?.cv?.resume ? (
               <motion.ul className="grid grid-cols-1 gap-4">
                 <motion.li
                   initial={{ opacity: 0, x: 100 }}
@@ -219,7 +339,7 @@ const VisitUserPage = () => {
                       >
                         {resumeUrl.cv.title || "Resume"}
                       </motion.p>
-                      <p className="text-sm text-gray-500"> {/* Updated classes */}
+                      <p className="text-sm text-gray-500">
                         File: {resumeUrl.cv.resumeOriginalName || "resume.pdf"}
                       </p>
                     </div>

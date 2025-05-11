@@ -42,7 +42,9 @@ const CompaniesTable = () => {
           <TableRow>
             <TableHead>Logo</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Contact</TableHead>
+            <TableHead>Created Date</TableHead>
             <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -63,11 +65,17 @@ const CompaniesTable = () => {
                 </TableCell>
                 <TableCell>
                   <div
-                  className="cursor-pointer hover:underline hover:text-blue-600"
+                  className="cursor-pointer underline text-blue-600"
                     onClick={() => navigate(`/company/${company._id}`)}
                   >
                     {company.name}
                   </div>
+                </TableCell>
+                <TableCell>
+                  {company.location}
+                </TableCell>
+                <TableCell>
+                  {company.contactInfo.phone}
                 </TableCell>
                 <TableCell>
                   {new Date(company.createdAt).toLocaleDateString()}

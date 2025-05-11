@@ -17,7 +17,7 @@ import { Edit2, Eye, MoreHorizontal } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
-const RecruiterJobsTable = ({ jobs, loading, error }) => {
+const RecruiterJobsTable = ({ jobs, loading }) => {
   const { searchJobByText } = useSelector((store) => store.job);
   const [filterJobs, setFilterJobs] = useState([]);
   const navigate = useNavigate();
@@ -59,10 +59,10 @@ const RecruiterJobsTable = ({ jobs, loading, error }) => {
               Loading...
             </TableCell>
           </TableRow>
-        ) : error || filterJobs.length === 0 ? (
+        ) : filterJobs.length === 0 ? (
           <TableRow>
             <TableCell colSpan={10} className="text-center">
-              {error ? "Error loading jobs" : "No Job Found"}
+              No Job Found
             </TableCell>
           </TableRow>
         ) : (
@@ -70,7 +70,7 @@ const RecruiterJobsTable = ({ jobs, loading, error }) => {
             <TableRow key={job.id}>
               <TableCell>
                 <div
-                  className="cursor-pointer hover:underline hover:text-blue-600"
+                  className="cursor-pointer underline text-blue-600"
                   onClick={() => navigate(`/company/${job.company._id}`)}
                 >
                   {job.company?.name}

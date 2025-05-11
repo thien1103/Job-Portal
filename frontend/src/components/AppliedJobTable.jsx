@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
-import { setAllAppliedJobs, setLoading, setError } from "@/redux/jobSlice";
+import { setAllAppliedJobs, setLoading } from "@/redux/jobSlice";
 import { APPLICATION_API_END_POINT } from "@/utils/constant";
 
 const AppliedJobTable = () => {
   const dispatch = useDispatch();
   const { allAppliedJobs: appliedJobs } = useSelector((store) => store.job);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchAppliedJobs = async () => {
       setLoading(true);
-      setError(null);
       try {
         const response = await axios.get(`${APPLICATION_API_END_POINT}/get`, {
           withCredentials: true,
@@ -21,8 +19,8 @@ const AppliedJobTable = () => {
         console.log("Fetched applications:", response.data.applications);
         dispatch(setAllAppliedJobs(response.data.applications));
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to fetch applied jobs");
         console.error("Error fetching applied jobs:", err);
+        // No error state set; log only for debugging
       } finally {
         setLoading(false);
       }
@@ -35,7 +33,6 @@ const AppliedJobTable = () => {
   console.log("Current appliedJobs:", appliedJobs);
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
 
   return (
     <div>
