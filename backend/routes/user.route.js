@@ -5,7 +5,7 @@ import {
     addExperience, getExperience, updateExperience, deleteExperience,
     addEducation, getEducation, updateEducation, deleteEducation,
     getApplicantProfile, getApplicantPrimaryCV,
-    getCurrentUser
+    getCurrentUser, updateProfileFromCV
 } from "../controllers/user.controller.js";
 import { isAuthenticated, isRecruiter } from "../middlewares/isAuthenticated.js";
 import { singleUpload } from "../middlewares/multer.js";
@@ -21,6 +21,7 @@ router.patch('/change-password', isAuthenticated, changePassword);
 
 router.get("/profile", isAuthenticated, getProfile);
 router.post("/profile/update", isAuthenticated, singleUpload, updateProfile);
+router.post("/profile/update-from-cv", isAuthenticated, singleUpload, updateProfileFromCV)
 router.patch("/profile/public", isAuthenticated, setProfilePublic);
 router.post("/profile/experience", isAuthenticated, addExperience);
 router.get("/profile/experience", isAuthenticated, getExperience);

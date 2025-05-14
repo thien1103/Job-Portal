@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import path from "path";
 import axios from "axios";
+import { PDFExtract } from "pdf.js-extract";
 
 import { User } from "../models/user.model.js";
 import { CV } from "../models/cv.model.js";
@@ -997,6 +998,368 @@ export const getApplicantPrimaryCV = async (req, res, next) => {
             success: true,
         });
     } catch (error) {
+        next(error);
+    }
+};
+
+// export const updateProfileFromCV = async (req, res, next) => {
+//     try {
+//         const userId = req.user._id;
+//         const file = req.file;
+
+//         if (!file) {
+//             throw createError("PDF file is required", 400);
+//         }
+
+//         const allowedMimeTypes = ["application/pdf"];
+//         const fileExtension = file.originalname.split(".").pop().toLowerCase();
+//         if (!allowedMimeTypes.includes(file.mimetype) || fileExtension !== "pdf") {
+//             throw createError("Only PDF files are allowed", 400);
+//         }
+
+//         const pdfExtract = new PDFExtract();
+//         const data = await pdfExtract.extractBuffer(file.buffer, {});
+//         const text = data.pages
+//             .map(page => {
+//                 return page.content
+//                     .sort((a, b) => a.y - b.y || a.x - b.x)
+//                     .map(item => item.str)
+//                     .join(" ");
+//             })
+//             .join("\n")
+//             .replace(/\s+/g, " ")
+//             .replace(/([A-Z])\s+([A-Z])\s+([A-Z])/g, "$1$2$3");
+
+//         console.log("Extracted raw text:", text);
+
+//         const prompt = `
+// You are an expert in parsing resumes/CVs. Below is the raw text extracted from a CV, which may contain irregular spacing or formatting. Extract the following information in a structured JSON format. Ensure all fields are filled, even if data is missing, using empty strings or null where applicable. Do NOT extract fullname, email, or phoneNumber.
+
+// - bio: A summary or objective (if available)
+// - skills: A list of skills (e.g., programming languages, tools, etc.). Ensure each skill is a concise string (e.g., "Node.js", not "Backend developing with Node.js runtime").
+// - experience: A list of work experiences, each with jobTitle, company, startDate (in YYYY-MM-DD format), endDate (in YYYY-MM-DD format), and description. Ensure dates are correctly formatted.
+// - education: A list of educational qualifications, each with degree, institution, startDate (in YYYY-MM-DD format), and endDate (in YYYY-MM-DD format). If dates are missing, use null.
+
+// Here is the raw text from the CV:
+
+// ${text}
+
+// Return ONLY the JSON object with the extracted information in the exact format requested. Do not include any additional text, explanations, or markdown. Ensure the output is a valid JSON string.
+// `;
+
+//         const response = await fetch("http://localhost:11434/api/generate", {
+//             method: "POST",
+//             headers: {
+//                 "Content-Type": "application/json",
+//             },
+//             body: JSON.stringify({
+//                 model: "mistral",
+//                 prompt: prompt,
+//                 stream: false,
+//                 options: {
+//                     temperature: 0.3,
+//                     max_tokens: 1500
+//                 }
+//             }),
+//         });
+
+//         if (!response.ok) {
+//             throw createError("Failed to fetch response from Ollama. Ensure Ollama server is running at http://localhost:11434.", 500);
+//         }
+
+//         const responseData = await response.json();
+//         const responseText = responseData.response.trim();
+
+
+//         let parsedData;
+//         try {
+//             parsedData = JSON.parse(responseText);
+//         } catch (e) {
+//             console.log("Raw response from Ollama:", responseText);
+//             const jsonMatch = responseText.match(/{[\s\S]*}/);
+//             if (jsonMatch) {
+//                 try {
+//                     parsedData = JSON.parse(jsonMatch[0]);
+//                 } catch (innerError) {
+//                     throw createError("Failed to parse JSON from Ollama response even after extraction. Check raw response in logs.", 500);
+//                 }
+//             } else {
+//                 throw createError("Failed to parse JSON from Ollama response. No valid JSON found. Check raw response in logs.", 500);
+//             }
+//         }
+
+//         console.log("Parsed data from Ollama:", parsedData);
+
+//         const user = await User.findById(userId);
+//         if (!user) {
+//             throw createError("User not found", 404);
+//         }
+
+//         user.profile = {
+//             ...user.profile,
+//             bio: parsedData.bio || user.profile.bio,
+//             skills: parsedData.skills || user.profile.skills,
+//             experience: parsedData.experience?.map(exp => ({
+//                 jobTitle: exp.jobTitle || "",
+//                 company: exp.company || "",
+//                 startDate: exp.startDate ? new Date(exp.startDate) : null,
+//                 endDate: exp.endDate ? new Date(exp.endDate) : null,
+//                 description: exp.description || ""
+//             })) || user.profile.experience,
+//             education: parsedData.education?.map(edu => ({
+//                 degree: edu.degree || "",
+//                 institution: edu.institution || "",
+//                 startDate: edu.startDate ? new Date(edu.startDate) : null,
+//                 endDate: edu.endDate ? new Date(edu.endDate) : null
+//             })) || user.profile.education,
+//             isPublic: user.profile.isPublic
+//         };
+
+//         await user.save();
+
+//         return res.status(200).json({
+//             message: "Profile updated successfully from CV",
+//             user,
+//             success: true
+//         });
+//     } catch (error) {
+//         console.log("Error in updateProfileFromCV: ", error);
+//         next(error);
+//     }
+// };
+
+export const updateProfileFromCV = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const file = req.file;
+
+        if (!file) {
+            throw createError("CV file is required", 400);
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        const allowedMimeTypes = [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/msword",
+            "text/plain",
+            "image/png",
+            "image/jpeg"
+        ];
+        const fileExtension = file.originalname.split(".").pop().toLowerCase();
+        const supportedFormats = ["pdf", "docx", "doc", "txt", "png", "jpg"];
+        if (!allowedMimeTypes.includes(file.mimetype) || !supportedFormats.includes(fileExtension)) {
+            throw createError("Only PDF, DOCX, DOC, TXT, PNG, and JPG formats are supported", 400);
+        }
+
+        const uploadResponse = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { resource_type: "raw", format: fileExtension },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                }
+            ).end(file.buffer);
+        });
+
+        const cvUrl = uploadResponse.secure_url;
+        console.log("Cloudinary URL:", cvUrl);
+
+        let rawText = "";
+        try {
+            const pdfExtract = new PDFExtract();
+            const pdfData = await pdfExtract.extractBuffer(file.buffer, {});
+            rawText = pdfData.pages
+                .map(page => page.content
+                    .sort((a, b) => a.y - b.y || a.x - b.x)
+                    .map(item => item.str)
+                    .join(" ")
+                )
+                .join("\n")
+                .replace(/\s+/g, " ")
+                .replace(/([A-Z])\s+([A-Z])\s+([A-Z])/g, "$1$2$3");
+            console.log("Extracted raw text:", rawText);
+        } catch (extractError) {
+            console.error("Error extracting raw text from PDF:", extractError);
+            rawText = ""; 
+        }
+
+        const options = {
+            method: "POST",
+            url: "https://resume-parsing-api2.p.rapidapi.com/processDocument",
+            headers: {
+                "x-rapidapi-key": process.env.RAPIDAPI_KEY,
+                "x-rapidapi-host": "resume-parsing-api2.p.rapidapi.com",
+                "Content-Type": "application/json",
+            },
+            data: {
+                extractionDetails: {
+                    name: "Resume - Extraction",
+                    language: "English",
+                    fields: [
+                        {
+                            key: "personal_info",
+                            description: "personal information of the person",
+                            type: "object",
+                            properties: [
+                                { key: "name", description: "name of the person", example: "Alex Smith", type: "string" },
+                                { key: "email", description: "email of the person", example: "alex.smith@gmail.com", type: "string" },
+                                { key: "phone", description: "phone of the person", example: "0712 123 123", type: "string" },
+                                { key: "address", description: "address of the person", example: "Bucharest, Romania", type: "string" },
+                            ],
+                        },
+                        {
+                            key: "work_experience",
+                            description: "work experience of the person",
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: [
+                                    { key: "title", description: "title of the job", example: "Software Engineer", type: "string" },
+                                    { key: "start_date", description: "start date of the job", example: "2022", type: "string" },
+                                    { key: "end_date", description: "end date of the job", example: "2023", type: "string" },
+                                    { key: "company", description: "company of the job", example: "Fastapp Development", type: "string" },
+                                    { key: "location", description: "location of the job", example: "Bucharest, Romania", type: "string" },
+                                    { key: "description", description: "description of the job", example: "Designing and implementing server-side logic.", type: "string" },
+                                ],
+                            },
+                        },
+                        {
+                            key: "education",
+                            description: "school education of the person",
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: [
+                                    { key: "title", description: "title of the education", example: "Master of Science in Computer Science", type: "string" },
+                                    { key: "start_date", description: "start date of the education", example: "2022", type: "string" },
+                                    { key: "end_date", description: "end date of the education", example: "2023", type: "string" },
+                                    { key: "institute", description: "institute of the education", example: "Bucharest Academy of Economic Studies", type: "string" },
+                                    { key: "location", description: "location of the education", example: "Bucharest, Romania", type: "string" },
+                                    { key: "description", description: "description of the education", example: "Advanced academic degree focusing on computer technology.", type: "string" },
+                                ],
+                            },
+                        },
+                        {
+                            key: "languages",
+                            description: "languages spoken by the person",
+                            type: "array",
+                            items: { type: "string", example: "English" },
+                        },
+                        {
+                            key: "skills",
+                            description: "skills of the person",
+                            type: "array",
+                            items: { type: "string", example: "NodeJS" },
+                        },
+                        {
+                            key: "certificates",
+                            description: "certificates of the person",
+                            type: "array",
+                            items: { type: "string", example: "AWS Certified Developer - Associate" },
+                        },
+                    ],
+                },
+                file: cvUrl,
+            },
+        };
+
+        const response = await axios.request(options);
+        if (response.status !== 200) {
+            throw createError(`Failed to fetch response from RapidAPI. Status: ${response.status}`, response.status);
+        }
+
+        const rapidApiData = response.data;
+        console.log("Raw RapidAPI response:", JSON.stringify(rapidApiData, null, 2));
+
+        let bio = user.profile.bio || "";
+        const summaryMatch = rawText.match(/SUMMARY\s*(.*?)(?=\nEDUCATION|\nEXPERIENCES|\nSKILLS|$)/si);
+        if (summaryMatch && summaryMatch[1]) {
+            bio = summaryMatch[1].trim().replace(/\s+/g, " ");
+        }
+
+        const parsedData = {
+            bio: bio,
+            skills: rapidApiData.skills || [],
+            experience: [],
+            education: [],
+        };
+
+        // Xử lý experience
+        if (Array.isArray(rapidApiData.work_experience)) {
+            parsedData.experience = rapidApiData.work_experience
+                .filter(exp => exp.title && exp.company)
+                .map(exp => {
+                    const startDate = exp.start_date ? new Date(`${exp.start_date}-01`).toISOString() : null;
+                    const endDate = exp.end_date ? new Date(`${exp.end_date}-01`).toISOString() : null;
+                    return {
+                        jobTitle: exp.title || "",
+                        company: exp.company || "",
+                        startDate: startDate,
+                        endDate: endDate,
+                        description: exp.description || `${exp.start_date || ""} - ${exp.end_date || "Present"}`,
+                    };
+                });
+        }
+
+        if (Array.isArray(rapidApiData.education)) {
+            parsedData.education = rapidApiData.education
+                .filter(edu => edu.title || edu.institute)
+                .map(edu => {
+                    const startDate = edu.start_date ? new Date(`${edu.start_date}-01`).toISOString() : null;
+                    const endDate = edu.end_date ? new Date(`${edu.end_date}-01`).toISOString() : null;
+                    return {
+                        degree: edu.title || "",
+                        institution: edu.institute || "",
+                        startDate: startDate,
+                        endDate: endDate,
+                    };
+                });
+        }
+
+        if (!parsedData || typeof parsedData !== "object" || !("bio" in parsedData) || !("skills" in parsedData) || !("experience" in parsedData) || !("education" in parsedData)) {
+            throw createError("Invalid data format.", 500);
+        }
+
+        user.profile = {
+            ...user.profile,
+            bio: parsedData.bio,
+            skills: parsedData.skills,
+            experience: parsedData.experience,
+            education: parsedData.education,
+            profilePhoto: user.profile.profilePhoto || "",
+            isPublic: user.profile.isPublic,
+        };
+
+        await user.save();
+
+        const responseData = {
+            message: "Profile updated successfully from CV",
+            user: {
+                profile: {
+                    bio: user.profile.bio,
+                    skills: user.profile.skills,
+                    profilePhoto: user.profile.profilePhoto,
+                    experience: user.profile.experience,
+                    education: user.profile.education,
+                    isPublic: user.profile.isPublic,
+                },
+                _id: user._id,
+                role: user.role,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                __v: user.__v,
+            },
+            success: true,
+        };
+
+        return res.status(200).json(responseData);
+    } catch (error) {
+        console.log("Error in updateProfileFromCV: ", error);
         next(error);
     }
 };
