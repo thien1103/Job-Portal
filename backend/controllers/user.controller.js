@@ -1185,7 +1185,7 @@ export const updateProfileFromCV = async (req, res, next) => {
             console.log("Extracted raw text:", rawText);
         } catch (extractError) {
             console.error("Error extracting raw text from PDF:", extractError);
-            rawText = ""; 
+            rawText = "";
         }
 
         const options = {
@@ -1276,14 +1276,7 @@ export const updateProfileFromCV = async (req, res, next) => {
         const rapidApiData = response.data;
         console.log("Raw RapidAPI response:", JSON.stringify(rapidApiData, null, 2));
 
-        let bio = user.profile.bio || "";
-        const summaryMatch = rawText.match(/SUMMARY\s*(.*?)(?=\nEDUCATION|\nEXPERIENCES|\nSKILLS|$)/si);
-        if (summaryMatch && summaryMatch[1]) {
-            bio = summaryMatch[1].trim().replace(/\s+/g, " ");
-        }
-
         const parsedData = {
-            bio: bio,
             skills: rapidApiData.skills || [],
             experience: [],
             education: [],
@@ -1327,7 +1320,6 @@ export const updateProfileFromCV = async (req, res, next) => {
 
         user.profile = {
             ...user.profile,
-            bio: parsedData.bio,
             skills: parsedData.skills,
             experience: parsedData.experience,
             education: parsedData.education,
@@ -1341,7 +1333,6 @@ export const updateProfileFromCV = async (req, res, next) => {
             message: "Profile updated successfully from CV",
             user: {
                 profile: {
-                    bio: user.profile.bio,
                     skills: user.profile.skills,
                     profilePhoto: user.profile.profilePhoto,
                     experience: user.profile.experience,

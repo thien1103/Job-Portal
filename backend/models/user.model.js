@@ -52,5 +52,6 @@ const userSchema = new mongoose.Schema({
         ],
         isPublic: { type: Boolean, default: false },
     },
+    savedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Job" }],
 }, { timestamps: true });
 export const User = mongoose.model('User', userSchema);

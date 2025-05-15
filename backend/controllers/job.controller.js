@@ -680,7 +680,7 @@ export const searchJobs = async (req, res, next) => {
                 { jobType: { $regex: keywordVariants.join("|"), $options: "i" } },
                 { level: { $regex: keywordVariants.join("|"), $options: "i" } }
             ];
-          }
+        }
 
         if (location) {
             query.location = { $regex: new RegExp(location, "i") };
@@ -710,19 +710,11 @@ export const searchJobs = async (req, res, next) => {
         // let jobsQuery = Job.find(query);
         let jobsQuery = Job.find(query).sort({ createdAt: -1 });
 
-        // if (hasTextSearch) {
-        //     jobsQuery = jobsQuery
-        //         .find({}, { score: { $meta: "textScore" } })
-        //         .sort({ score: { $meta: "textScore" }, createdAt: -1 });
-        // } else {
-        //     jobsQuery = jobsQuery.sort({ createdAt: -1 });
-        // }
-
         const jobs = await jobsQuery
             .populate("company", "name")
             .select("-__v -applications")
             .lean();
-        
+
         console.log("Jobs: ", jobs);
 
         if (jobs.length === 0) {
