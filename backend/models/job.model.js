@@ -62,4 +62,9 @@ const jobSchema = new mongoose.Schema({
         required: true
     }
 }, { timestamps: true });
+
+jobSchema.index({ title: "text", description: "text", location: "text", requirements: "text", benefits: "text" }, { weights: { title: 10, description: 5, location: 3, requirements: 2, benefits: 1 } });
+jobSchema.index({ deadline: 1 }); 
+jobSchema.index({ level: 1 });
+
 export const Job = mongoose.model("Job", jobSchema);

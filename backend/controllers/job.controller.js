@@ -514,7 +514,7 @@ export const getJobApplicants = async (req, res, next) => {
 
         const applicantsFromApplication = applications.map(app => ({
             applicationId: app._id,
-            applicant: app.applicant, 
+            applicant: app.applicant,
             job: {
                 title: app.job.title,
                 company: {
@@ -639,4 +639,103 @@ export const getApplicantDetails = async (req, res, next) => {
         console.log("Error getApplicantDetails controller: ", error);
         throw createError(error);
     }
-}
+};
+
+export const searchJobs = async (req, res, next) => {
+    try {
+        const { q, location, jobType, level, minSalary, maxSalary } = req.query;
+
+        const query = {};
+
+        // let hasTextSearch = false;
+        // if (q) {
+        //     try {
+        //         query.$text = { $search: q };
+        //         hasTextSearch = true;
+        //     } catch (e) {
+        //         query.$or = [
+        //             { title: { $regex: q, $options: "i" } },
+        //             { description: { $regex: q, $options: "i" } },
+        //             { location: { $regex: q, $options: "i" } },
+        //             { requirements: { $regex: q, $options: "i" } },
+        //             { benefits: { $regex: q, $options: "i" } }
+        //         ];
+        //     }
+        // }
+
+        if (q) {
+            const keyword = q.toLowerCase();
+            const keywordVariants = [
+                keyword,
+                keyword.endsWith("er") ? keyword.slice(0, -2) : `${keyword}er`,
+                keyword.endsWith("ment") ? keyword.slice(0, -4) : `${keyword}ment`
+            ];
+
+            query.$or = [
+                { title: { $regex: keywordVariants.join("|"), $options: "i" } },
+                { description: { $regex: keywordVariants.join("|"), $options: "i" } },
+                { location: { $regex: keywordVariants.join("|"), $options: "i" } },
+                { requirements: { $elemMatch: { $regex: keywordVariants.join("|"), $options: "i" } } },
+                { benefits: { $elemMatch: { $regex: keywordVariants.join("|"), $options: "i" } } },
+                { jobType: { $regex: keywordVariants.join("|"), $options: "i" } },
+                { level: { $regex: keywordVariants.join("|"), $options: "i" } }
+            ];
+          }
+
+        if (location) {
+            query.location = { $regex: new RegExp(location, "i") };
+        }
+
+        if (jobType) {
+            query.jobType = jobType;
+        }
+
+        if (level) {
+            query.level = level;
+        }
+
+        if (minSalary || maxSalary) {
+            query.salary = {};
+            if (minSalary) query.salary.$gte = Number(minSalary);
+            if (maxSalary) query.salary.$lte = Number(maxSalary);
+        }
+
+        const currentDate = new Date();
+        if (Job.schema.paths.deadline) {
+            query.deadline = { $gte: currentDate };
+        }
+
+        console.log("Query: ", query);
+
+        // let jobsQuery = Job.find(query);
+        let jobsQuery = Job.find(query).sort({ createdAt: -1 });
+
+        // if (hasTextSearch) {
+        //     jobsQuery = jobsQuery
+        //         .find({}, { score: { $meta: "textScore" } })
+        //         .sort({ score: { $meta: "textScore" }, createdAt: -1 });
+        // } else {
+        //     jobsQuery = jobsQuery.sort({ createdAt: -1 });
+        // }
+
+        const jobs = await jobsQuery
+            .populate("company", "name")
+            .select("-__v -applications")
+            .lean();
+        
+        console.log("Jobs: ", jobs);
+
+        if (jobs.length === 0) {
+            throw createError(" No job is found in accordance with your requirements", 404);
+        }
+
+        return res.status(200).json({
+            message: "Jobs retrieved successfully",
+            success: true,
+            data: jobs
+        });
+    } catch (error) {
+        console.log("Error in searchJobs: ", error);
+        next(error);
+    }
+};
