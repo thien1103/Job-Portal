@@ -136,10 +136,12 @@ const Navbar = () => {
             initial="hidden"
             animate="visible"
           >
-            <img className='h-20 w-20' src={logo} alt="Logo" />
-            <h1 className='ml-2 text-2xl font-bold'>
-              Job <span className='text-[#087658]'>Partner</span>
-            </h1>
+            <Link to="/" className="flex items-center">
+              <img className='h-20 w-20' src={logo} alt="Logo" />
+              <h1 className='ml-2 text-2xl font-bold'>
+                Job <span className='text-[#087658]'>Partner</span>
+              </h1>
+            </Link>
           </motion.div>
 
           {/* Desktop Navigation Links */}
