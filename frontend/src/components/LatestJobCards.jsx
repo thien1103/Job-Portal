@@ -35,7 +35,7 @@ const LatestJobCards = ({ job }) => {
             ? "Today"
             : `${daysAgoFunction(job?.createdAt)} days ago`}
         </p>
-        <Button
+        {/* <Button
           variant="outline"
           className="rounded-full"
           size="icon"
@@ -43,7 +43,7 @@ const LatestJobCards = ({ job }) => {
           title={user ? "Save Job" : "Log in to save"}
         >
           <Bookmark />
-        </Button>
+        </Button> */}
       </div>
 
       <div className="flex items-center gap-2 my-2">
@@ -79,17 +79,18 @@ const LatestJobCards = ({ job }) => {
 
       <div className="flex items-center gap-4 mt-4">
         <Button
+          className="bg-[#087658] text-white"
           onClick={() => navigate(`/job/${job?.id}`)}
           variant="outline"
         >
           Details
         </Button>
-        <Button
+        {/* <Button
           className="bg-[#087658]"
           onClick={handleSaveAction}
         >
           Save For Later
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

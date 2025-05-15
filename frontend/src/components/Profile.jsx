@@ -2,9 +2,17 @@ import React, { useState, useEffect } from "react";
 import Navbar from "./shared/Navbar";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { Contact, Mail, Pen, Check, Trash } from "lucide-react";
+import { Contact, Mail, Pen, Check, Trash, Eye } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "./ui/dialog"; // Assuming you have a Dialog component
 import AppliedJobTable from "./AppliedJobTable";
 import UpdateProfileDialog from "./UpdateProfileDialog";
 import { useSelector } from "react-redux";
@@ -15,9 +23,40 @@ import educationLogo from "../assets/education_profile_icon.png";
 import { toast, Toaster } from "sonner";
 import { USER_API_END_POINT } from "@/utils/constant";
 
+// Bio Dialog Component
+const BioDialog = ({ bio, open, setOpen }) => {
+  // Split bio into paragraphs if it contains line breaks
+  const formattedBio = bio ? bio.split("\n").filter(line => line.trim() !== "") : ["No bio available"];
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>About Me</DialogTitle>
+          <DialogDescription>
+            <div className="mt-2 space-y-3">
+              {formattedBio.map((paragraph, index) => (
+                <p key={index} className="text-gray-700 leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogClose asChild>
+          <Button variant="outline" className="mt-4">
+            Close
+          </Button>
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Profile = () => {
   useGetAppliedJobs();
   const [open, setOpen] = useState(false);
+  const [bioDialogOpen, setBioDialogOpen] = useState(false); // State for bio dialog
   const { user } = useSelector((store) => store.auth);
 
   const [editingExperienceIndex, setEditingExperienceIndex] = useState(null);
@@ -291,9 +330,20 @@ const Profile = () => {
                 alt="profile"
               />
             </Avatar>
-            <div>
+            <div className="max-w-[600px]">
               <h1 className="font-medium text-xl">{user?.fullname}</h1>
-              <p>{user?.profile?.bio}</p>
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-gray-600 line-clamp-2">{user?.profile?.bio}</p>
+                {user?.profile?.bio && (
+                  <Button
+                    variant="link"
+                    className="text-gray-600 p-0 h-auto"
+                    onClick={() => setBioDialogOpen(true)}
+                  >
+                    View More
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
           <Button onClick={() => setOpen(true)} variant="outline">
@@ -314,9 +364,13 @@ const Profile = () => {
 
         <div className="my-5">
           <h1>Skills</h1>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap gap-2 p-2 min-h-[40px]">
             {user?.profile?.skills?.length ? (
-              user.profile.skills.map((item, index) => <Badge key={index}>{item}</Badge>)
+              user.profile.skills.map((item, index) => (
+                <Badge key={index} className="px-3 py-1 text-sm">
+                  {item}
+                </Badge>
+              ))
             ) : (
               <span>NA</span>
             )}
@@ -583,6 +637,7 @@ const Profile = () => {
       </div>
 
       <UpdateProfileDialog open={open} setOpen={setOpen} />
+      <BioDialog bio={user?.profile?.bio} open={bioDialogOpen} setOpen={setBioDialogOpen} />
     </div>
   );
 };

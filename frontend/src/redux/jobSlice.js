@@ -8,12 +8,12 @@ const jobSlice = createSlice({
     singleJob: null,
     searchJobByText: "",
     allAppliedJobs: [],
-    searchedQuery: "",
+    searchedQuery: {},
     loading: false,
   },
   reducers: {
     setAllJobs: (state, action) => {
-      state.allJobs = action.payload;
+      state.allJobs = Array.isArray(action.payload) ? action.payload : [];
     },
     setSingleJob: (state, action) => {
       state.singleJob = action.payload;
@@ -25,7 +25,6 @@ const jobSlice = createSlice({
       state.searchJobByText = action.payload;
     },
     setAllAppliedJobs: (state, action) => {
-      // Only update if payload is a non-empty array
       if (Array.isArray(action.payload) && action.payload.length > 0) {
         state.allAppliedJobs = action.payload;
       }
@@ -36,7 +35,15 @@ const jobSlice = createSlice({
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
-
+    resetJobState: (state) => {
+      state.allJobs = [];
+      state.allRecruiterJobs = [];
+      state.singleJob = null;
+      state.searchJobByText = "";
+      state.allAppliedJobs = [];
+      state.searchedQuery = {};
+      state.loading = false;
+    },
   },
 });
 
@@ -48,6 +55,7 @@ export const {
   setAllAppliedJobs,
   setSearchedQuery,
   setLoading,
+  resetJobState,
 } = jobSlice.actions;
 
 export default jobSlice.reducer;
