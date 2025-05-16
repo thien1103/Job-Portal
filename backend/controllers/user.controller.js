@@ -1303,15 +1303,15 @@ export const updateProfileFromCV = async (req, res, next) => {
         console.log("Raw RapidAPI response:", JSON.stringify(rapidApiData, null, 2));
 
         const parsedData = {
-            personal_info: rapidApiData.personal_info || {},
+            // personal_info: rapidApiData.personal_info || {},
             skills: rapidApiData.skills || [],
             experience: [],
             education: [],
         };
 
-        user.fullname = parsedData.personal_info.name || user.fullname;
-        user.email = parsedData.personal_info.email || user.email;
-        user.phoneNumber = parsedData.personal_info.phone || user.phoneNumber;
+        // user.fullname = parsedData.personal_info.name || user.fullname;
+        // user.email = parsedData.personal_info.email || user.email;
+        // user.phoneNumber = parsedData.personal_info.phone || user.phoneNumber;
 
         if (Array.isArray(rapidApiData.work_experience)) {
             parsedData.experience = rapidApiData.work_experience
