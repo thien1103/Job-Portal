@@ -440,3 +440,31 @@ export const deleteApplication = async (req, res, next) => {
         next(error);
     }
 };
+
+export const checkApplication = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const jobId = req.params.id;
+
+        if (!jobId) {
+            throw createError("Job ID is required", 400);
+        };
+
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError("Job not found", 404);
+        }
+
+        const existingApplication = await Application.findOne({
+            job: jobId,
+            applicant: userId,
+        });
+
+        return res.status(200).json({
+            success: true,
+            hasApplied: !!existingApplication,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
