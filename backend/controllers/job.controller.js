@@ -551,7 +551,7 @@ export const getApplicationDetails = async (req, res, next) => {
         }
 
         const company = await Company.findOne({ userId });
-        if (!company || job.company.toString() !== company._id.toString()) {
+        if (!company || job.company._id.toString() !== company._id.toString()) {
             throw createError("You are not authorized to view this application", 403);
         }
 

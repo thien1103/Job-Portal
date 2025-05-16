@@ -262,7 +262,7 @@ export const updateStatus = async (req, res, next) => {
         }
 
         const company = await Company.findOne({ userId });
-        if (!company || job.company.toString() !== company._id.toString()) {
+        if (!company) {
             throw createError("You are not authorized to update this application", 403);
         }
 
