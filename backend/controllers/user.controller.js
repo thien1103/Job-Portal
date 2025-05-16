@@ -1128,6 +1128,29 @@ export const getApplicantPrimaryCV = async (req, res, next) => {
 //     }
 // };
 
+// Hàm kiểm tra định dạng ngày hợp lệ
+const isValidDateString = (dateString) => {
+    if (!dateString || dateString === "Now" || dateString === "") return false;
+    const regex = /^(0[1-12]|1[0-2])\/[0-9]{4}$|^[0-9]{4}$|^[A-Za-z]{3}, [0-9]{4}$/;
+    return regex.test(dateString);
+};
+
+// Hàm chuẩn hóa ngày
+const normalizeDate = (dateString) => {
+    if (!isValidDateString(dateString)) return null;
+    if (dateString.includes("/")) {
+        const [month, year] = dateString.split("/");
+        return new Date(`${year}-${month}-01`).toISOString();
+    }
+    if (dateString.includes(", ")) {
+        const [monthStr, year] = dateString.split(", ");
+        const monthIndex = new Date(`${monthStr} 1, 2000`).getMonth() + 1;
+        if (isNaN(monthIndex)) return null;
+        return new Date(`${year}-${monthIndex.toString().padStart(2, "0")}-01`).toISOString();
+    }
+    return new Date(`${dateString}-01-01`).toISOString();
+};
+
 export const updateProfileFromCV = async (req, res, next) => {
     try {
         const userId = req.user._id;
@@ -1148,7 +1171,7 @@ export const updateProfileFromCV = async (req, res, next) => {
             "application/msword",
             "text/plain",
             "image/png",
-            "image/jpeg"
+            "image/jpeg",
         ];
         const fileExtension = file.originalname.split(".").pop().toLowerCase();
         const supportedFormats = ["pdf", "docx", "doc", "txt", "png", "jpg"];
@@ -1170,22 +1193,25 @@ export const updateProfileFromCV = async (req, res, next) => {
         console.log("Cloudinary URL:", cvUrl);
 
         let rawText = "";
-        try {
-            const pdfExtract = new PDFExtract();
-            const pdfData = await pdfExtract.extractBuffer(file.buffer, {});
-            rawText = pdfData.pages
-                .map(page => page.content
-                    .sort((a, b) => a.y - b.y || a.x - b.x)
-                    .map(item => item.str)
-                    .join(" ")
-                )
-                .join("\n")
-                .replace(/\s+/g, " ")
-                .replace(/([A-Z])\s+([A-Z])\s+([A-Z])/g, "$1$2$3");
-            console.log("Extracted raw text:", rawText);
-        } catch (extractError) {
-            console.error("Error extracting raw text from PDF:", extractError);
-            rawText = "";
+        if (fileExtension === "pdf") {
+            try {
+                const pdfExtract = new PDFExtract();
+                const pdfData = await pdfExtract.extractBuffer(file.buffer, {});
+                rawText = pdfData.pages
+                    .map((page) =>
+                        page.content
+                            .sort((a, b) => a.y - b.y || a.x - b.x)
+                            .map((item) => item.str)
+                            .join(" ")
+                    )
+                    .join("\n")
+                    .replace(/\s+/g, " ")
+                    .replace(/([A-Z])\s+([A-Z])\s+([A-Z])/g, "$1$2$3");
+                console.log("Extracted raw text:", rawText);
+            } catch (extractError) {
+                console.error("Error extracting raw text from PDF:", extractError);
+                rawText = "";
+            }
         }
 
         const options = {
@@ -1277,45 +1303,37 @@ export const updateProfileFromCV = async (req, res, next) => {
         console.log("Raw RapidAPI response:", JSON.stringify(rapidApiData, null, 2));
 
         const parsedData = {
+            personal_info: rapidApiData.personal_info || {},
             skills: rapidApiData.skills || [],
             experience: [],
             education: [],
         };
 
-        // Xử lý experience
+        user.fullname = parsedData.personal_info.name || user.fullname;
+        user.email = parsedData.personal_info.email || user.email;
+        user.phoneNumber = parsedData.personal_info.phone || user.phoneNumber;
+
         if (Array.isArray(rapidApiData.work_experience)) {
             parsedData.experience = rapidApiData.work_experience
-                .filter(exp => exp.title && exp.company)
-                .map(exp => {
-                    const startDate = exp.start_date ? new Date(`${exp.start_date}-01`).toISOString() : null;
-                    const endDate = exp.end_date ? new Date(`${exp.end_date}-01`).toISOString() : null;
-                    return {
-                        jobTitle: exp.title || "",
-                        company: exp.company || "",
-                        startDate: startDate,
-                        endDate: endDate,
-                        description: exp.description || `${exp.start_date || ""} - ${exp.end_date || "Present"}`,
-                    };
-                });
+                .filter((exp) => exp.title && exp.company)
+                .map((exp) => ({
+                    jobTitle: exp.title || "",
+                    company: exp.company || "",
+                    startDate: normalizeDate(exp.start_date),
+                    endDate: normalizeDate(exp.end_date),
+                    description: exp.description || `${exp.start_date || ""} - ${exp.end_date || "Present"}`,
+                }));
         }
 
         if (Array.isArray(rapidApiData.education)) {
             parsedData.education = rapidApiData.education
-                .filter(edu => edu.title || edu.institute)
-                .map(edu => {
-                    const startDate = edu.start_date ? new Date(`${edu.start_date}-01`).toISOString() : null;
-                    const endDate = edu.end_date ? new Date(`${edu.end_date}-01`).toISOString() : null;
-                    return {
-                        degree: edu.title || "",
-                        institution: edu.institute || "",
-                        startDate: startDate,
-                        endDate: endDate,
-                    };
-                });
-        }
-
-        if (!parsedData || typeof parsedData !== "object" || !("bio" in parsedData) || !("skills" in parsedData) || !("experience" in parsedData) || !("education" in parsedData)) {
-            throw createError("Invalid data format.", 500);
+                .filter((edu) => edu.title || edu.institute)
+                .map((edu) => ({
+                    degree: edu.title || "",
+                    institution: edu.institute || "",
+                    startDate: normalizeDate(edu.start_date),
+                    endDate: normalizeDate(edu.end_date),
+                }));
         }
 
         user.profile = {
@@ -1324,14 +1342,19 @@ export const updateProfileFromCV = async (req, res, next) => {
             experience: parsedData.experience,
             education: parsedData.education,
             profilePhoto: user.profile.profilePhoto || "",
-            isPublic: user.profile.isPublic,
+            isPublic: user.profile.isPublic || false,
         };
 
         await user.save();
 
         const responseData = {
-            message: "Profile updated successfully from CV",
+            message: "Update profile from CV successfully",
             user: {
+                _id: user._id,
+                fullname: user.fullname,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                role: user.role,
                 profile: {
                     skills: user.profile.skills,
                     profilePhoto: user.profile.profilePhoto,
@@ -1339,18 +1362,15 @@ export const updateProfileFromCV = async (req, res, next) => {
                     education: user.profile.education,
                     isPublic: user.profile.isPublic,
                 },
-                _id: user._id,
-                role: user.role,
                 createdAt: user.createdAt,
                 updatedAt: user.updatedAt,
-                __v: user.__v,
             },
             success: true,
         };
 
         return res.status(200).json(responseData);
     } catch (error) {
-        console.log("Error in updateProfileFromCV: ", error);
+        console.error("Error in updateProfileFromCV:", error);
         next(error);
     }
 };

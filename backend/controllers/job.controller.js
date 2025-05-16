@@ -565,7 +565,7 @@ export const getApplicationDetails = async (req, res, next) => {
                 select: "title company",
                 populate: {
                     path: "company",
-                    select: "name contactInfo"
+                    select: "_id name contactInfo"
                 }
             });
 
@@ -590,6 +590,7 @@ export const getApplicationDetails = async (req, res, next) => {
             job: {
                 title: application.job.title,
                 company: {
+                    _id: application.job.company._id,
                     name: application.job.company.name,
                     contactInfo: application.job.company.contactInfo
                 }
