@@ -22,6 +22,7 @@ const JobDescription = () => {
   const { singleJob } = useSelector((store) => store.job);
   const { user } = useSelector((store) => store.auth);
   const [isApplied, setIsApplied] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [companyData, setCompanyData] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [cvFile, setCvFile] = useState(null);
@@ -35,11 +36,28 @@ const JobDescription = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (singleJob && user) {
-      const applied = singleJob?.applications?.some((app) => app.applicant === user?._id) || false;
-      setIsApplied(applied);
-    }
-  }, [singleJob, user]);
+    const checkApplicationStatus = async () => {
+      if (!user || !jobId) return;
+      setIsChecking(true);
+      try {
+        const res = await axios.post(
+          `${APPLICATION_API_END_POINT}/check/${jobId}`,
+          {},
+          { withCredentials: true }
+        );
+        if (res.data.success) {
+          setIsApplied(res.data.hasApplied);
+        }
+      } catch (error) {
+        console.error("Error checking application status:", error.response?.data || error.message);
+        toast.error("Failed to check application status.");
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkApplicationStatus();
+  }, [jobId, user]);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0] || (event.dataTransfer && event.dataTransfer.files[0]);
@@ -82,23 +100,23 @@ const JobDescription = () => {
       navigate("/login");
       return;
     }
-  
+
     if (!cvFile) {
       toast.error("Please upload a CV file.");
       return;
     }
-  
+
     if (!coverLetter.trim()) {
       toast.error("Please provide a cover letter.");
       return;
     }
-  
+
     setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append("file", cvFile);
       formData.append("coverLetter", coverLetter);
-  
+
       console.log("Sending request to:", `${APPLICATION_API_END_POINT}/apply/${jobId}`);
       console.log("Cookies:", document.cookie);
       const res = await axios.post(`${APPLICATION_API_END_POINT}/apply/${jobId}`, formData, {
@@ -107,7 +125,7 @@ const JobDescription = () => {
           "Content-Type": "multipart/form-data",
         },
       });
-  
+
       if (res.data.success) {
         setIsApplied(true);
         const updatedSingleJob = {
@@ -192,11 +210,15 @@ const JobDescription = () => {
           <div className="flex gap-4">
             <Button
               onClick={() => setOpenDialog(true)}
-              disabled={isApplied}
-              className={`rounded-lg flex-1 ${isApplied ? "bg-gray-600 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 text-white"}`}
+              disabled={isChecking || isApplied}
+              className={`rounded-lg flex-1 ${
+                isChecking ? "bg-gray-500 cursor-not-allowed" :
+                isApplied ? "bg-gray-600 cursor-not-allowed" :
+                "bg-green-600 hover:bg-green-700 text-white"
+              }`}
             >
               <img src="https://cdn-icons-png.flaticon.com/128/561/561226.png" className="w-[18px] h-[18px] mr-4" alt="Apply Icon" />
-              {isApplied ? "Already Applied" : "Apply Now"}
+              {isChecking ? "Checking..." : isApplied ? "Already Applied" : "Apply Now"}
             </Button>
             <Button
               variant="outline"
@@ -224,7 +246,7 @@ const JobDescription = () => {
               >
                 {cvFile ? (
                   <div className="flex items-center justify-between">
-                    <p className="text-gray-700">{cvFile.name}</p>
+                    <p className="text-gray-700 max-w-[200px] truncate">{cvFile.name}</p>
                     <Button variant="destructive" size="sm" onClick={removeFile}>
                       Remove
                     </Button>
@@ -238,7 +260,7 @@ const JobDescription = () => {
                       id="cv-upload"
                       type="file"
                       accept="application/pdf"
-                      className="hidden"
+                      className="hidden max-w-[200px]"
                       onChange={handleFileChange}
                     />
                   </>

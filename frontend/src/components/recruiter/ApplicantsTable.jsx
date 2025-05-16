@@ -10,17 +10,18 @@ import {
 } from "../ui/table";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
-import { JOB_API_END_POINT } from "@/utils/constant";
+import { JOB_API_END_POINT, APPLICATION_API_END_POINT } from "@/utils/constant";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
-import { Button } from "../ui/button"; // <- Assuming you're using shadcn/ui
+import { Button } from "../ui/button";
 
 const ApplicantsTable = () => {
   const params = useParams();
   const { applicants } = useSelector((store) => store.application);
   const [detailedApplicants, setDetailedApplicants] = useState({});
   const [noApplicants, setNoApplicants] = useState(false);
-  const [loading, setLoading] = useState(true); // Loading state to handle fetching process
+  const [loading, setLoading] = useState(true);
+  const [statusLoading, setStatusLoading] = useState({});
 
   const fetchApplicationDetails = async (jobId, applicationId) => {
     try {
@@ -37,7 +38,7 @@ const ApplicantsTable = () => {
     } catch (error) {
       toast.error("Failed to fetch application details.");
       if (error.response?.status === 404) {
-        setNoApplicants(true); // Set noApplicants when 404 error occurs
+        setNoApplicants(true);
       }
     }
   };
@@ -52,47 +53,46 @@ const ApplicantsTable = () => {
 
   useEffect(() => {
     const fetchApplicantsData = async () => {
-      // If there are no applicants, directly set noApplicants to true
       if (applicants?.length === 0) {
         setNoApplicants(true);
-        setLoading(false); // Stop loading once we know there are no applicants
+        setLoading(false);
       } else {
-        // Otherwise, proceed to fetch details for each applicant
         for (const applicant of applicants) {
           if (!detailedApplicants[applicant.applicationId]) {
             await fetchApplicationDetails(params.id, applicant.applicationId);
           }
         }
-        setLoading(false); // Stop loading once all applicants have been processed
+        setLoading(false);
       }
     };
 
     fetchApplicantsData();
-  }, [applicants, detailedApplicants, params.id]); // Run effect when applicants or detailedApplicants change
+  }, [applicants, detailedApplicants, params.id]);
 
   const statusHandler = async (status, id) => {
+    setStatusLoading((prev) => ({ ...prev, [id]: true }));
     try {
       const res = await axios.post(
-        `${JOB_API_END_POINT}/status/${id}/update`,
+        `${APPLICATION_API_END_POINT}/status/${id}/update`,
         { status },
         { withCredentials: true }
       );
       if (res.data.success) {
         toast.success(res.data.message);
-        setDetailedApplicants((prev) => ({
-          ...prev,
-          [id]: { ...prev[id], status },
-        }));
+        // Refresh application details to ensure UI reflects the latest status
+        await fetchApplicationDetails(params.id, id);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update status.");
+    } finally {
+      setStatusLoading((prev) => ({ ...prev, [id]: false }));
     }
   };
 
   if (loading) {
     return (
       <div className="text-center py-6">
-        <span>Loading...</span> {/* You can replace this with a loading spinner */}
+        <span>Loading...</span>
       </div>
     );
   }
@@ -123,7 +123,7 @@ const ApplicantsTable = () => {
             applicants?.map((item) => {
               const detailedData = detailedApplicants[item.applicationId] || {};
               const applicant = detailedData.applicant || {};
-              const currentStatus = detailedData.status?.toLowerCase();
+              const currentStatus = detailedData.status?.toLowerCase() || "pending";
 
               return (
                 <TableRow key={item.applicationId}>
@@ -159,29 +159,41 @@ const ApplicantsTable = () => {
                       : "N/A"}
                   </TableCell>
                   <TableCell className="capitalize">
-                    {currentStatus || "Pending"}
+                    {currentStatus}
                   </TableCell>
                   <TableCell className="flex justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      disabled={currentStatus === "accepted"}
-                      onClick={() =>
-                        statusHandler("accepted", item.applicationId)
-                      }
-                      className="justify-center text-center align-center items-center bg-green-400 hover:bg-green-500"
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      disabled={currentStatus === "rejected"}
-                      onClick={() =>
-                        statusHandler("rejected", item.applicationId)
-                      }
-                      className="justify-center text-center align-center items-center"
-                    >
-                      Reject
-                    </Button>
+                    {currentStatus === "pending" ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          disabled={statusLoading[item.applicationId]}
+                          onClick={() => statusHandler("accepted", item.applicationId)}
+                          className="bg-green-500 hover:bg-green-700 hover:text-white text-black"
+                        >
+                          {statusLoading[item.applicationId] ? "Processing..." : "Accept"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          disabled={statusLoading[item.applicationId]}
+                          onClick={() => statusHandler("rejected", item.applicationId)}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          {statusLoading[item.applicationId] ? "Processing..." : "Reject"}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant={currentStatus === "accepted" ? "outline" : "destructive"}
+                        disabled={true}
+                        className={`${
+                          currentStatus === "accepted"
+                            ? "bg-green-400 text-white"
+                            : "bg-red-600 text-white"
+                        }`}
+                      >
+                        {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );

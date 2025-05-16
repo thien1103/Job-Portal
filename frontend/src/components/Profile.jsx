@@ -10,9 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogClose,
-} from "./ui/dialog"; // Assuming you have a Dialog component
+} from "./ui/dialog";
 import AppliedJobTable from "./AppliedJobTable";
 import UpdateProfileDialog from "./UpdateProfileDialog";
 import { useSelector } from "react-redux";
@@ -20,12 +18,11 @@ import useGetAppliedJobs from "@/hooks/useGetAppliedJobs";
 import axios from "axios";
 import companyLogo from "../assets/company_profile_icon.png";
 import educationLogo from "../assets/education_profile_icon.png";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { USER_API_END_POINT } from "@/utils/constant";
 
 // Bio Dialog Component
 const BioDialog = ({ bio, open, setOpen }) => {
-  // Split bio into paragraphs if it contains line breaks
   const formattedBio = bio ? bio.split("\n").filter(line => line.trim() !== "") : ["No bio available"];
 
   return (
@@ -33,21 +30,279 @@ const BioDialog = ({ bio, open, setOpen }) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>About Me</DialogTitle>
-          <DialogDescription>
-            <div className="mt-2 space-y-3">
-              {formattedBio.map((paragraph, index) => (
-                <p key={index} className="text-gray-700 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </DialogDescription>
+          <div className="mt-2 space-y-3">
+            {formattedBio.map((paragraph, index) => (
+              <p key={index} className="text-gray-700 leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </DialogHeader>
-        <DialogClose asChild>
-          <Button variant="outline" className="mt-4">
-            Close
-          </Button>
-        </DialogClose>
+        <Button variant="outline" className="mt-4" onClick={() => setOpen(false)}>
+          Close
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ParseCVDialog Component
+const ParseCVDialog = ({ open, setOpen }) => {
+  const [file, setFile] = useState(null);
+  const [userProfile, setUserProfile] = useState({ skills: '' });
+  const [experiences, setExperiences] = useState([{ company: '', position: '', startDate: '', endDate: 'Present', description: '' }]);
+  const [educations, setEducations] = useState([{ university: '', major: '', startYear: '', endYear: 'Present' }]);
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const parseCV = async () => {
+    if (!file) {
+      toast.error('Please select a CV file.');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await axios.post(`${USER_API_END_POINT}/profile/update-from-cv`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        const { user } = res.data;
+        setUserProfile({
+          skills: user.profile.skills ? user.profile.skills.join(', ') : '',
+        });
+        const parsedExperiences = user.profile.experience?.length > 0 
+          ? user.profile.experience.map(exp => ({
+              company: exp.company || '',
+              position: exp.jobTitle || '',
+              startDate: exp.startDate ? new Date(exp.startDate).toLocaleDateString("en-US", { month: "2-digit", year: "numeric" }) : '',
+              endDate: exp.endDate ? new Date(exp.endDate).toLocaleDateString("en-US", { month: "2-digit", year: "numeric" }) : 'Present',
+              description: exp.description || '',
+            }))
+          : [{ company: '', position: '', startDate: '', endDate: 'Present', description: '' }];
+        setExperiences(parsedExperiences);
+
+        const parsedEducations = user.profile.education?.length > 0 
+          ? user.profile.education.map(edu => ({
+              university: edu.institution || '',
+              major: edu.degree || '',
+              startYear: edu.startDate ? new Date(edu.startDate).getFullYear().toString() : '',
+              endYear: edu.endDate ? new Date(edu.endDate).getFullYear().toString() : 'Present',
+            }))
+          : [{ university: '', major: '', startYear: '', endYear: 'Present' }];
+        setEducations(parsedEducations);
+
+        toast.success('CV parsed successfully!');
+      }
+    } catch (error) {
+      console.error('Error parsing CV:', error);
+      toast.error('Failed to parse CV.');
+    }
+  };
+
+  const confirmUpdate = async () => {
+    try {
+      // Update user profile
+      await axios.post(`${USER_API_END_POINT}/profile/update`, {
+        skills: userProfile.skills.split(',').map(s => s.trim()),
+      }, { withCredentials: true });
+
+      // Delete existing experiences
+      const currentExperiences = await axios.get(`${USER_API_END_POINT}/profile/experience`, { withCredentials: true });
+      for (const exp of currentExperiences.data.experience) {
+        await axios.delete(`${USER_API_END_POINT}/profile/experience/${exp._id}`, { withCredentials: true });
+      }
+      // Add new experiences
+      for (const exp of experiences) {
+        const [month, year] = exp.startDate.split("/");
+        const startDate = year && month ? `${year}-${month}-01` : null;
+        const endDate = exp.endDate === "Present" ? "" : exp.endDate ? `${exp.endDate.split("/")[1]}-${exp.endDate.split("/")[0]}-01` : null;
+        if (startDate && exp.company && exp.position) {
+          await axios.post(`${USER_API_END_POINT}/profile/experience`, {
+            jobTitle: exp.position,
+            company: exp.company,
+            startDate,
+            endDate,
+            description: exp.description,
+          }, { withCredentials: true });
+        }
+      }
+
+      // Delete existing educations
+      const currentEducations = await axios.get(`${USER_API_END_POINT}/profile/education`, { withCredentials: true });
+      for (const edu of currentEducations.data.education) {
+        await axios.delete(`${USER_API_END_POINT}/profile/education/${edu._id}`, { withCredentials: true });
+      }
+      // Add new educations
+      for (const edu of educations) {
+        const startDate = edu.startYear ? new Date(edu.startYear).toISOString().split("T")[0] : null;
+        const endDate = edu.endYear === "Present" ? "" : edu.endYear ? new Date(edu.endYear).toISOString().split("T")[0] : null;
+        if (startDate && edu.university && edu.major) {
+          await axios.post(`${USER_API_END_POINT}/profile/education`, {
+            degree: edu.major,
+            institution: edu.university,
+            startDate,
+            endDate,
+          }, { withCredentials: true });
+        }
+      }
+
+      toast.success('Profile updated successfully!');
+      setOpen(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile.');
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Parse CV</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Upload CV</Label>
+            <input type="file" onChange={handleFileChange} className="border p-2 rounded w-full" />
+            <Button onClick={parseCV} className="mt-2">Parse CV</Button>
+          </div>
+
+          <h3 className="font-semibold">User Profile</h3>
+          <div>
+            <Label>Skills (comma separated)</Label>
+            <input
+              className="border p-1 rounded w-full"
+              value={userProfile.skills}
+              onChange={(e) => setUserProfile({ ...userProfile, skills: e.target.value })}
+            />
+          </div>
+
+          <h3 className="font-semibold">Experiences</h3>
+          {experiences.map((exp, index) => (
+            <div key={index} className="space-y-2 border p-2 rounded">
+              <div>
+                <Label>Company</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={exp.company}
+                  onChange={(e) => {
+                    const newExps = [...experiences];
+                    newExps[index].company = e.target.value;
+                    setExperiences(newExps);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Position</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={exp.position}
+                  onChange={(e) => {
+                    const newExps = [...experiences];
+                    newExps[index].position = e.target.value;
+                    setExperiences(newExps);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Start Date (MM/YYYY)</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={exp.startDate}
+                  onChange={(e) => {
+                    const newExps = [...experiences];
+                    newExps[index].startDate = e.target.value;
+                    setExperiences(newExps);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>End Date (MM/YYYY or Present)</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={exp.endDate}
+                  onChange={(e) => {
+                    const newExps = [...experiences];
+                    newExps[index].endDate = e.target.value;
+                    setExperiences(newExps);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <textarea
+                  className="border p-1 rounded w-full"
+                  value={exp.description}
+                  onChange={(e) => {
+                    const newExps = [...experiences];
+                    newExps[index].description = e.target.value;
+                    setExperiences(newExps);
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+
+          <h3 className="font-semibold">Educations</h3>
+          {educations.map((edu, index) => (
+            <div key={index} className="space-y-2 border p-2 rounded">
+              <div>
+                <Label>University</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={edu.university}
+                  onChange={(e) => {
+                    const newEdus = [...educations];
+                    newEdus[index].university = e.target.value;
+                    setEducations(newEdus);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Major</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={edu.major}
+                  onChange={(e) => {
+                    const newEdus = [...educations];
+                    newEdus[index].major = e.target.value;
+                    setEducations(newEdus);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Start Year</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={edu.startYear}
+                  onChange={(e) => {
+                    const newEdus = [...educations];
+                    newEdus[index].startYear = e.target.value;
+                    setEducations(newEdus);
+                  }}
+                />
+              </div>
+              <div>
+                <Label>End Year (or Present)</Label>
+                <input
+                  className="border p-1 rounded w-full"
+                  value={edu.endYear}
+                  onChange={(e) => {
+                    const newEdus = [...educations];
+                    newEdus[index].endYear = e.target.value;
+                    setEducations(newEdus);
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+
+          <Button onClick={confirmUpdate}>Confirm</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -56,18 +311,17 @@ const BioDialog = ({ bio, open, setOpen }) => {
 const Profile = () => {
   useGetAppliedJobs();
   const [open, setOpen] = useState(false);
-  const [bioDialogOpen, setBioDialogOpen] = useState(false); // State for bio dialog
+  const [bioDialogOpen, setBioDialogOpen] = useState(false);
+  const [parseCVDialogOpen, setParseCVDialogOpen] = useState(false);
   const { user } = useSelector((store) => store.auth);
 
   const [editingExperienceIndex, setEditingExperienceIndex] = useState(null);
   const [editingEducationIndex, setEditingEducationIndex] = useState(null);
-
   const [experiences, setExperiences] = useState([]);
   const [educations, setEducations] = useState([]);
 
-  // Helper function to format date (MMYYYY to MM/YYYY) for experience
   const formatDate = (input) => {
-    const cleaned = input.replace(/[^0-9]/g, ""); // Remove non-numeric characters
+    const cleaned = input.replace(/[^0-9]/g, "");
     if (cleaned.length >= 6) {
       const month = cleaned.slice(0, 2);
       const year = cleaned.slice(2, 6);
@@ -76,7 +330,6 @@ const Profile = () => {
     return cleaned;
   };
 
-  // Fetch experiences and educations on component mount
   useEffect(() => {
     const fetchExperiences = async () => {
       try {
@@ -137,16 +390,14 @@ const Profile = () => {
     fetchEducations();
   }, []);
 
-  // API helper functions with toast notifications
   const addExperienceAPI = async (experience) => {
     try {
       const [month, year] = experience.startDate.split("/");
-      const startDate = `${year}-${month}-01`; // Default day to 01
+      const startDate = `${year}-${month}-01`;
       const endDate =
         experience.endDate === "Present"
           ? ""
-          : `${experience.endDate.split("/")[1]}-${experience.endDate.split("/")[0]}-01`; // Default day to 01
-
+          : `${experience.endDate.split("/")[1]}-${experience.endDate.split("/")[0]}-01`;
       const payload = {
         jobTitle: experience.position,
         company: experience.company,
@@ -171,12 +422,11 @@ const Profile = () => {
   const updateExperienceAPI = async (experience) => {
     try {
       const [month, year] = experience.startDate.split("/");
-      const startDate = `${year}-${month}-01`; // Default day to 01
+      const startDate = `${year}-${month}-01`;
       const endDate =
         experience.endDate === "Present"
           ? ""
-          : `${experience.endDate.split("/")[1]}-${experience.endDate.split("/")[0]}-01`; // Default day to 01
-
+          : `${experience.endDate.split("/")[1]}-${experience.endDate.split("/")[0]}-01`;
       const payload = {
         jobTitle: experience.position,
         company: experience.company,
@@ -187,9 +437,7 @@ const Profile = () => {
       const res = await axios.patch(
         `${USER_API_END_POINT}/profile/experience/${experience.id}`,
         payload,
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
       if (res.data.success) {
         toast.success("Experience updated successfully!");
@@ -251,9 +499,7 @@ const Profile = () => {
       const res = await axios.patch(
         `${USER_API_END_POINT}/profile/education/${education.id}`,
         payload,
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
       if (res.data.success) {
         toast.success("Education updated successfully!");
@@ -319,7 +565,6 @@ const Profile = () => {
 
   return (
     <div>
-      {/* <Toaster position="top-right" richColors /> */}
       <Navbar />
       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
         <div className="flex justify-between">
@@ -346,9 +591,14 @@ const Profile = () => {
               </div>
             </div>
           </div>
-          <Button onClick={() => setOpen(true)} variant="outline">
-            <Pen />
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => setOpen(true)} variant="outline">
+              <Pen />
+            </Button>
+            <Button onClick={() => setParseCVDialogOpen(true)} variant="outline">
+              Parse CV
+            </Button>
+          </div>
         </div>
 
         <div className="my-5">
@@ -378,7 +628,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Experience */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
         <h1 className="font-bold text-lg">Experience</h1>
         {experiences.map((exp, index) => (
@@ -512,7 +761,6 @@ const Profile = () => {
         </Button>
       </div>
 
-      {/* Education */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
         <h1 className="font-bold text-lg">Education</h1>
         {educations.map((edu, index) => (
@@ -606,7 +854,7 @@ const Profile = () => {
                   }
                 }}
               >
-                {editingEducationIndex === index ? <Check /> : <Pen />}
+                {editingExperienceIndex === index ? <Check /> : <Pen />}
               </Button>
               {editingEducationIndex === index && (
                 <Button variant="destructive" onClick={() => removeEducation(index)}>
@@ -630,7 +878,6 @@ const Profile = () => {
         </Button>
       </div>
 
-      {/* Applied Jobs */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl mt-9 mb-9">
         <h1 className="font-bold text-lg my-5">Applied Jobs</h1>
         <AppliedJobTable />
@@ -638,6 +885,7 @@ const Profile = () => {
 
       <UpdateProfileDialog open={open} setOpen={setOpen} />
       <BioDialog bio={user?.profile?.bio} open={bioDialogOpen} setOpen={setBioDialogOpen} />
+      <ParseCVDialog open={parseCVDialogOpen} setOpen={setParseCVDialogOpen} />
     </div>
   );
 };
