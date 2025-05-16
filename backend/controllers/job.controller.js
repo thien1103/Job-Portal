@@ -558,15 +558,15 @@ export const getApplicationDetails = async (req, res, next) => {
         const application = await Application.findById(applicationId)
             .populate({
                 path: "applicant",
-                select: "_id fullname email"
+                select: "_id fullname email",
             })
             .populate({
                 path: "job",
                 select: "title company",
                 populate: {
                     path: "company",
-                    select: "_id name contactInfo"
-                }
+                    select: "_id name contactInfo",
+                },
             });
 
         if (!application) {
@@ -582,29 +582,30 @@ export const getApplicationDetails = async (req, res, next) => {
             applicant: application.applicant,
             resume: application.resume,
             coverLetter: application.coverLetter
-                ? application.coverLetter.split("\n").map(line => line.trim()).filter(line => line)
+                ? application.coverLetter.split("\n").map((line) => line.trim()).filter((line) => line)
                 : [],
             status: application.status,
             appliedAt: application.createdAt,
             updatedAt: application.updatedAt,
             job: {
                 title: application.job.title,
+                companyId: application.job.company._id,
                 company: {
                     _id: application.job.company._id,
                     name: application.job.company.name,
-                    contactInfo: application.job.company.contactInfo
-                }
-            }
+                    contactInfo: application.job.company.contactInfo,
+                },
+            },
         };
 
         return res.status(200).json({
             message: "Application details retrieved successfully",
             application: responseData,
-            success: true
+            success: true,
         });
     } catch (error) {
         next(error);
-    }
+      }
 };
 
 export const getApplicantDetails = async (req, res, next) => {
