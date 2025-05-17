@@ -27,10 +27,14 @@ const allowedOrigins = [
 ];
 const corsOptions = {
     origin: (origin, callback) => {
+        console.log("Incoming origin:", origin);
+
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error("Not allowed by CORS"));
+            console.warn("Blocked by CORS policy:", origin);
+            // callback(new Error("Not allowed by CORS"));
+            callback(null, false);
         }
     },
     credentials: true,
@@ -48,9 +52,16 @@ app.use("/user", userRoute);
 app.use("/company", companyRoute);
 app.use("/job", jobRoute);
 app.use("/application", applicationRoute);
-app.use("/admin", adminRoute),
+app.use("/admin", adminRoute);
 
-    app.use(errorHandler);
+app.use((req, res, next) => {
+    res.status(404).json({
+        message: `Route not found: ${req.originalUrl}`,
+        status: 'fail',
+    });
+});
+
+app.use(errorHandler);
 
 app.listen(PORT, async () => {
     await connectDB();
