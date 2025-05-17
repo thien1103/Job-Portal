@@ -83,14 +83,6 @@ export const setupChangeStream = () => {
     const Application = mongoose.model("Application");
     const Job = mongoose.model("Job");
     const User = mongoose.model("User");
-    const DeletionLog = mongoose.model('DeletionLog', new mongoose.Schema({
-        applicationId: mongoose.Schema.Types.ObjectId,
-        jobId: mongoose.Schema.Types.ObjectId,
-        applicantId: mongoose.Schema.Types.ObjectId,
-        status: String,
-        rejectedAt: Date,
-        deletedAt: { type: Date, default: Date.now, index: { expires: 86400 } },
-    }), 'deletionLogs');
 
     const changeStream = Application.watch([
         { $match: { operationType: "delete" } },
@@ -101,33 +93,18 @@ export const setupChangeStream = () => {
             console.log("Change Stream triggered for deletion:", JSON.stringify(change, null, 2));
 
             const applicationId = change.documentKey._id;
-            let jobId, applicantId, status, rejectedAt;
 
-            // Thử lấy jobId từ fullDocumentBeforeChange
-            if (change.fullDocumentBeforeChange) {
-                jobId = change.fullDocumentBeforeChange.job;
-                applicantId = change.fullDocumentBeforeChange.applicant;
-                status = change.fullDocumentBeforeChange.status;
-                rejectedAt = change.fullDocumentBeforeChange.rejectedAt;
-                console.log(`Got jobId ${jobId} from fullDocumentBeforeChange for application ${applicationId}`);
-            } else {
-                // Fallback tới deletionLogs
-                const deletionLog = await DeletionLog.findOne({ applicationId });
-                if (!deletionLog) {
-                    console.error(`No deletion log found for application ${applicationId}`);
-                    return;
-                }
-                jobId = deletionLog.jobId;
-                applicantId = deletionLog.applicantId;
-                status = deletionLog.status;
-                rejectedAt = deletionLog.rejectedAt;
-                console.log(`Got jobId ${jobId} from deletionLogs for application ${applicationId}`);
-            }
-
-            if (!jobId) {
-                console.error(`No jobId found for application ${applicationId}`);
+            if (!change.fullDocumentBeforeChange) {
+                console.error(`No fullDocumentBeforeChange for application ${applicationId}. Manual cleanup required.`);
                 return;
             }
+
+            const jobId = change.fullDocumentBeforeChange.job;
+            const applicantId = change.fullDocumentBeforeChange.applicant;
+            const status = change.fullDocumentBeforeChange.status;
+            const rejectedAt = change.fullDocumentBeforeChange.rejectedAt;
+
+            console.log(`Processing deletion for application ${applicationId} from job ${jobId}`);
 
             // Retry logic cho $pull
             let updateResult;
@@ -140,7 +117,7 @@ export const setupChangeStream = () => {
                 console.log(`Update result for Job ${jobId}:`, JSON.stringify(updateResult, null, 2));
                 if (updateResult.modifiedCount > 0) break;
                 console.warn(`Attempt ${attempt} failed: No changes made to Job ${jobId}`);
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Chờ 1s trước khi thử lại
             }
 
             if (updateResult.modifiedCount === 0) {
