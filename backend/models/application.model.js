@@ -33,38 +33,60 @@ const applicationSchema = new mongoose.Schema({
 
 applicationSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
     try {
-        const DeletedApplication = mongoose.model('DeletedApplication', new mongoose.Schema({
+        const DeletionLog = mongoose.model('DeletionLog', new mongoose.Schema({
             applicationId: mongoose.Schema.Types.ObjectId,
-            job: mongoose.Schema.Types.ObjectId,
-            applicant: {
-                fullname: String,
-                email: String,
-            },
-            title: String,
-            company: {
-                name: String,
-            },
+            jobId: mongoose.Schema.Types.ObjectId,
+            applicantId: mongoose.Schema.Types.ObjectId,
             status: String,
-            resume: String,
             rejectedAt: Date,
             deletedAt: { type: Date, default: Date.now, index: { expires: 120 } },
-        }));
+        }), 'deletionLogs');
 
-        await DeletedApplication.create({
+        await DeletionLog.create({
             applicationId: this._id,
-            job: this.job,
-            applicant: this.applicant,
-            title: this.job.title,
-            company: this.job.company,
+            jobId: this.job,
+            applicantId: this.applicant,
             status: this.status,
-            resume: this.resume,
             rejectedAt: this.rejectedAt,
         });
-        console.log(`Saved deleted application data for ${this._id}`);
+        console.log(`Logged document deletion for application ${this._id} with job ${this.job}`);
         next();
     } catch (error) {
-        console.error("Error in pre-deleteOne middleware:", error);
-        next(error);
+        console.error(`Error in pre-deleteOne (document) middleware for application ${this._id}:`, error);
+        next();
+    }
+});
+
+applicationSchema.pre('deleteOne', { document: false, query: true }, async function (next) {
+    try {
+        const filter = this.getFilter();
+        const app = await this.model.findOne(filter);
+        if (!app) {
+            console.warn(`No application found for query deletion with filter:`, filter);
+            return next();
+        }
+
+        const DeletionLog = mongoose.model('DeletionLog', new mongoose.Schema({
+            applicationId: mongoose.Schema.Types.ObjectId,
+            jobId: mongoose.Schema.Types.ObjectId,
+            applicantId: mongoose.Schema.Types.ObjectId,
+            status: String,
+            rejectedAt: Date,
+            deletedAt: { type: Date, default: Date.now, index: { expires: 120 } },
+        }), 'deletionLogs');
+
+        await DeletionLog.create({
+            applicationId: app._id,
+            jobId: app.job,
+            applicantId: app.applicant,
+            status: app.status,
+            rejectedAt: app.rejectedAt,
+        });
+        console.log(`Logged query deletion for application ${app._id} with job ${app.job}`);
+        next();
+    } catch (error) {
+        console.error(`Error in pre-deleteOne (query) middleware:`, error);
+        next();
     }
 });
 export const Application = mongoose.model("Application", applicationSchema);
