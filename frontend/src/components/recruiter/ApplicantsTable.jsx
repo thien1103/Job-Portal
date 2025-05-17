@@ -52,22 +52,31 @@ const ApplicantsTable = () => {
   };
 
   useEffect(() => {
-    const fetchApplicantsData = async () => {
-      if (applicants?.length === 0) {
-        setNoApplicants(true);
-        setLoading(false);
-      } else {
-        for (const applicant of applicants) {
-          if (!detailedApplicants[applicant.applicationId]) {
-            await fetchApplicationDetails(params.id, applicant.applicationId);
-          }
-        }
-        setLoading(false);
-      }
-    };
+  const fetchApplicantsData = async () => {
+    if (applicants?.length === 0) {
+      setNoApplicants(true);
+      setLoading(false);
+      return;
+    }
 
+    const promises = applicants.map((applicant) => {
+      const id = applicant.applicationId;
+      if (!detailedApplicants[id]) {
+        return fetchApplicationDetails(params.id, id);
+      }
+      return null;
+    });
+
+    await Promise.all(promises.filter(Boolean));
+    setLoading(false);
+  };
+
+  // Gọi một lần khi applicants thay đổi thôi
+  if (applicants) {
     fetchApplicantsData();
-  }, [applicants, detailedApplicants, params.id]);
+  }
+}, [applicants, params.id]); // ❌ bỏ detailedApplicants ra khỏi dependency
+
 
   const statusHandler = async (status, id) => {
     setStatusLoading((prev) => ({ ...prev, [id]: true }));
