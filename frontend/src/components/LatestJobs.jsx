@@ -6,7 +6,7 @@ const LatestJobs = () => {
   const { allJobs } = useSelector((store) => store.job);
 
   return (
-    <div className="max-w-7xl mx-auto my-20 mt-44">
+    <div className="max-w-7xl mx-auto my-20 mt-10">
       <h1 className="text-4xl font-bold">
         <span className="text-[#087658]">Latest & Top </span> Job Openings
       </h1>

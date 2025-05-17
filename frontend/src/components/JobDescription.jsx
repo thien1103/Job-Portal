@@ -3,8 +3,8 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { APPLICATION_API_END_POINT, JOB_API_END_POINT, COMPANY_API_END_POINT } from "@/utils/constant";
-import { setSingleJob } from "@/redux/jobSlice";
+import { APPLICATION_API_END_POINT, JOB_API_END_POINT, COMPANY_API_END_POINT, USER_API_END_POINT } from "@/utils/constant";
+import { setSingleJob, setSavedJobIds } from "@/redux/jobSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import Navbar from "./shared/Navbar";
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const JobDescription = () => {
-  const { singleJob } = useSelector((store) => store.job);
+  const { singleJob, savedJobIds } = useSelector((store) => store.job);
   const { user } = useSelector((store) => store.auth);
   const [isApplied, setIsApplied] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -29,6 +29,8 @@ const JobDescription = () => {
   const [coverLetter, setCoverLetter] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const params = useParams();
   const jobId = params.id;
@@ -58,6 +60,58 @@ const JobDescription = () => {
 
     checkApplicationStatus();
   }, [jobId, user]);
+
+  useEffect(() => {
+    // Check if job is saved based on savedJobIds
+    setIsSaved(savedJobIds.includes(jobId));
+  }, [savedJobIds, jobId]);
+
+  const handleSaveAction = async () => {
+    if (!user) {
+      toast.info("Please log in to save this job.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        `${USER_API_END_POINT}/save-job/${jobId}`,
+        {},
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        setIsSaved(true);
+        dispatch(setSavedJobIds([...savedJobIds, jobId]));
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      console.error("Error saving job:", error);
+      toast.error(error.response?.data?.message || "Failed to save job");
+    }
+  };
+
+  const handleUnsaveAction = async () => {
+    if (!user) {
+      toast.info("Please log in to unsave this job.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await axios.delete(
+        `${USER_API_END_POINT}/unsave-job/${jobId}`,
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        setIsSaved(false);
+        dispatch(setSavedJobIds(savedJobIds.filter(id => id !== jobId)));
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      console.error("Error unsaving job:", error);
+      toast.error(error.response?.data?.message || "Failed to unsave job");
+    }
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0] || (event.dataTransfer && event.dataTransfer.files[0]);
@@ -223,9 +277,17 @@ const JobDescription = () => {
             <Button
               variant="outline"
               className="rounded-lg flex-1 border-gray-300 text-gray-700 hover:bg-gray-100"
+              onClick={isSaved ? handleUnsaveAction : handleSaveAction}
+              disabled={!user}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
             >
-              <img src="https://cdn-icons-png.flaticon.com/128/4675/4675168.png" className="w-[18px] h-[18px] mr-4" alt="Save Icon" />
-              Save Job
+              <img
+                src={isSaved && !isHovered ? "https://cdn-icons-png.flaticon.com/128/833/833472.png" : "https://cdn-icons-png.flaticon.com/128/4675/4675168.png"}
+                className="w-[18px] h-[18px] mr-4"
+                alt="Save Icon"
+              />
+              {isSaved ? (isHovered ? "Unsave This Job" : "Job Saved") : "Save Job"}
             </Button>
           </div>
         </div>

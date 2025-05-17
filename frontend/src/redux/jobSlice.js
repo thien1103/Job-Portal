@@ -10,6 +10,7 @@ const jobSlice = createSlice({
     allAppliedJobs: [],
     searchedQuery: {},
     loading: false,
+    savedJobIds: [], // Added for saved job IDs
   },
   reducers: {
     setAllJobs: (state, action) => {
@@ -35,6 +36,9 @@ const jobSlice = createSlice({
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
+    setSavedJobIds: (state, action) => {
+      state.savedJobIds = Array.isArray(action.payload) ? action.payload : [];
+    },
     resetJobState: (state) => {
       state.allJobs = [];
       state.allRecruiterJobs = [];
@@ -43,6 +47,7 @@ const jobSlice = createSlice({
       state.allAppliedJobs = [];
       state.searchedQuery = {};
       state.loading = false;
+      state.savedJobIds = [];
     },
   },
 });
@@ -55,6 +60,7 @@ export const {
   setAllAppliedJobs,
   setSearchedQuery,
   setLoading,
+  setSavedJobIds,
   resetJobState,
 } = jobSlice.actions;
 

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { Avatar, AvatarImage } from '../ui/avatar';
-import { LogOut, User2 } from 'lucide-react';
+import { LogOut, User2, Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -249,6 +249,12 @@ const Navbar = () => {
                             </Button>
                           </div>
                         )}
+                        <div className='flex items-center gap-2 cursor-pointer'>
+                              <Heart />
+                              <Button variant="link">
+                                <Link to="/saved-jobs">Saved Jobs</Link>
+                              </Button>
+                            </div>
                         <div className='flex items-center gap-2 cursor-pointer'>
                           <LogOut />
                           <Button onClick={logoutHandler} variant="link">

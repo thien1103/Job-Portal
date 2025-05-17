@@ -8,7 +8,7 @@ import useGetAllJobs from '@/hooks/useGetAllJobs'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { OurCompanies } from './OurCompanies';
-
+import TopBrands from './TopBrand';
 
 
 const Home = () => {
@@ -24,6 +24,7 @@ const Home = () => {
     <div>
       <Navbar />
       <HeroSection />
+      <TopBrands/>
       <LatestJobs />
       <CategoryCarousel />
       <OurCompanies />

@@ -27,6 +27,7 @@ import Statistics from "./components/admin/Statistics";
 import EditJob from "./components/recruiter/EditRecruiterJob";
 import VisitUserPage from './components/recruiter/VisitUserPage';
 import VisitCompanyPage from './components/VisitCompanyPage';
+import SavedJobs from './components/SaveJobs';
 
 const appRouter = createBrowserRouter([
   {
@@ -60,6 +61,10 @@ const appRouter = createBrowserRouter([
   {
     path: "/company/:companyId",
     element: <VisitCompanyPage />,
+  },
+  {
+    path: "/saved-jobs",
+    element: <SavedJobs />,
   },
   {
     path: "/myCV",
@@ -156,7 +161,7 @@ const appRouter = createBrowserRouter([
 
 function App() {
   return (
-    <div>
+    <div className="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen relative z-0">
       <RouterProvider router={appRouter} />
     </div>
   );

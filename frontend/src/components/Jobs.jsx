@@ -6,13 +6,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
 import axios from 'axios';
-import { JOB_API_END_POINT } from '@/utils/constant';
-import { setAllJobs } from '@/redux/jobSlice';
+import { JOB_API_END_POINT, USER_API_END_POINT } from '@/utils/constant';
+import { setAllJobs, setSavedJobIds } from '@/redux/jobSlice';
 import { useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
 
 const Jobs = () => {
-  const { allJobs, searchedQuery } = useSelector((store) => store.job);
+  const { allJobs, searchedQuery, savedJobIds } = useSelector((store) => store.job);
   const dispatch = useDispatch();
   const location = useLocation();
   const [filterJobs, setFilterJobs] = useState([]);
@@ -28,22 +28,40 @@ const Jobs = () => {
         withCredentials: true,
       });
       if (res.data.success) {
-        dispatch(setAllJobs(res.data.jobs || [])); // Ensure jobs is an array
+        dispatch(setAllJobs(res.data.jobs || []));
       }
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
-      dispatch(setAllJobs([])); // Fallback to empty array on error
+      dispatch(setAllJobs([]));
     }
   }, [dispatch]);
 
-  // Fetch jobs on mount and when refresh is signaled
+  // Fetch saved jobs
+  const fetchSavedJobs = useCallback(async () => {
+    try {
+      const res = await axios.get(`${USER_API_END_POINT}/saved-jobs`, {
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        const savedIds = res.data.jobs.map(job => job.id) || [];
+        dispatch(setSavedJobIds(savedIds));
+      }
+    } catch (error) {
+      console.error('Failed to fetch saved jobs:', error);
+      dispatch(setSavedJobIds([]));
+    }
+  }, [dispatch]);
+
+  // Fetch jobs and saved jobs on mount and when refresh is signaled
   useEffect(() => {
     fetchAllJobs();
+    fetchSavedJobs();
     if (location.state?.refresh) {
       fetchAllJobs();
+      fetchSavedJobs();
       window.history.replaceState({}, document.title);
     }
-  }, [fetchAllJobs, location.state]);
+  }, [fetchAllJobs, fetchSavedJobs, location.state]);
 
   // Local search and filter logic
   useEffect(() => {
@@ -163,7 +181,7 @@ const Jobs = () => {
                     >
                       {currentJobs.map((job) => (
                         <div key={job?._id} className='scale-90'>
-                          <Job job={job} />
+                          <Job job={job} savedJobIds={savedJobIds} />
                         </div>
                       ))}
                     </motion.div>

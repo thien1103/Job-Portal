@@ -1,14 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Badge } from "./ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Bookmark } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import axios from "axios";
+import { USER_API_END_POINT } from "@/utils/constant";
+import { toast } from "sonner";
+import { setSavedJobIds } from "@/redux/jobSlice";
 
 const LatestJobCards = ({ job }) => {
   const navigate = useNavigate();
-  const { user } = useSelector((store) => store.auth); // Get user from Redux store
+  const { user } = useSelector((store) => store.auth); // Get user from store.auth
+  const { savedJobIds = [] } = useSelector((store) => store.job); // Get savedJobIds from store.job
+  const dispatch = useDispatch();
+  const [isSaved, setIsSaved] = useState(savedJobIds.includes(job?.id));
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    // Debug logs to verify state
+    console.log("User:", user, "Saved Job IDs:", savedJobIds, "Job ID:", job?.id, "Is Saved:", isSaved);
+    // Update isSaved when savedJobIds or job changes
+    setIsSaved(savedJobIds.includes(job?.id));
+  }, [job?.id, savedJobIds]);
 
   const daysAgoFunction = (mongodbTime) => {
     const createdAt = new Date(mongodbTime);
@@ -17,13 +32,48 @@ const LatestJobCards = ({ job }) => {
     return Math.floor(timeDifference / (1000 * 24 * 60 * 60));
   };
 
-  // Handle click for save actions, redirect to login if not logged in
-  const handleSaveAction = () => {
+  const handleSaveAction = async () => {
     if (!user) {
       navigate("/login");
-    } else {
-      // Placeholder for save functionality (e.g., dispatch an action to save job)
-      console.log("Save job:", job?.id);
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        `${USER_API_END_POINT}/save-job/${job?.id}`,
+        {},
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        setIsSaved(true);
+        dispatch(setSavedJobIds([...savedJobIds, job?.id]));
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      console.error("Error saving job:", error);
+      toast.error(error.response?.data?.message || "Failed to save job");
+    }
+  };
+
+  const handleUnsaveAction = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await axios.delete(
+        `${USER_API_END_POINT}/unsave-job/${job?.id}`,
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        setIsSaved(false);
+        dispatch(setSavedJobIds(savedJobIds.filter(id => id !== job?.id)));
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      console.error("Error unsaving job:", error);
+      toast.error(error.response?.data?.message || "Failed to unsave job");
     }
   };
 
@@ -35,15 +85,16 @@ const LatestJobCards = ({ job }) => {
             ? "Today"
             : `${daysAgoFunction(job?.createdAt)} days ago`}
         </p>
-        {/* <Button
+        <Button
           variant="outline"
           className="rounded-full"
           size="icon"
-          onClick={handleSaveAction}
-          title={user ? "Save Job" : "Log in to save"}
+          onClick={isSaved ? handleUnsaveAction : handleSaveAction}
+          disabled={!user}
+          title={user ? (isSaved ? "Unsave Job" : "Save Job") : "Log in to save"}
         >
-          <Bookmark />
-        </Button> */}
+          <Bookmark fill={isSaved ? "#087658" : "none"} stroke={isSaved ? "#087658" : "#000"} />
+        </Button>
       </div>
 
       <div className="flex items-center gap-2 my-2">
@@ -62,7 +113,9 @@ const LatestJobCards = ({ job }) => {
 
       <div>
         <h1 className="font-bold text-lg my-2 line-clamp-1">{job?.title}</h1>
-        <p className="text-sm text-gray-600 line-clamp-2">{job?.description}</p>
+        <p className="text-sm text-gray-600 line-clamp-2">
+          {Array.isArray(job?.description) ? job.description.join(" ") : job?.description || "No description"}
+        </p>
       </div>
 
       <div className="flex items-center gap-2 mt-4">
@@ -85,12 +138,25 @@ const LatestJobCards = ({ job }) => {
         >
           Details
         </Button>
-        {/* <Button
-          className="bg-[#087658]"
-          onClick={handleSaveAction}
-        >
-          Save For Later
-        </Button> */}
+        {isSaved ? (
+          <Button
+            className="bg-[#087658]"
+            onClick={handleUnsaveAction}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            disabled={!user}
+          >
+            {isHovered ? "Unsave Job" : "Job Saved"}
+          </Button>
+        ) : (
+          <Button
+            className="bg-[#087658]"
+            onClick={handleSaveAction}
+            disabled={!user}
+          >
+            Save For Later
+          </Button>
+        )}
       </div>
     </div>
   );
