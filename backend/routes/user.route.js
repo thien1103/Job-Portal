@@ -5,9 +5,10 @@ import {
     addExperience, getExperience, updateExperience, deleteExperience,
     addEducation, getEducation, updateEducation, deleteEducation,
     getApplicantProfile, getApplicantPrimaryCV,
-    getCurrentUser, updateProfileFromCV
+    getCurrentUser, updateProfileFromCV,
+    saveJob, getSavedJobs, unsaveJob,
 } from "../controllers/user.controller.js";
-import { isAuthenticated, isRecruiter } from "../middlewares/isAuthenticated.js";
+import { isApplicant, isAuthenticated, isRecruiter } from "../middlewares/isAuthenticated.js";
 import { singleUpload } from "../middlewares/multer.js";
 
 const router = express.Router();
@@ -42,6 +43,10 @@ router.get("/cv/download/:cvId", isAuthenticated, downloadCV);
 
 router.get("/applicant/:userId/profile", isAuthenticated, isRecruiter, getApplicantProfile);
 router.get("/applicant/:userId/primary-cv", isAuthenticated, isRecruiter, getApplicantPrimaryCV);
+
+router.post("/save-job/:id", isAuthenticated, isApplicant, saveJob);
+router.get("/saved-jobs", isAuthenticated, isApplicant, getSavedJobs);
+router.delete("/unsave-job/:id", isAuthenticated, isApplicant, unsaveJob);
 
 export default router;
 

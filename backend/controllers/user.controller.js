@@ -5,6 +5,7 @@ import axios from "axios";
 import { PDFExtract } from "pdf.js-extract";
 
 import { User } from "../models/user.model.js";
+import { Job } from "../models/job.model.js";
 import { CV } from "../models/cv.model.js";
 import { RefreshToken } from '../models/token.model.js';
 import getDataUri from "../utils/datauri.js";
@@ -1371,6 +1372,112 @@ export const updateProfileFromCV = async (req, res, next) => {
         return res.status(200).json(responseData);
     } catch (error) {
         console.error("Error in updateProfileFromCV:", error);
+        next(error);
+    }
+};
+
+export const saveJob = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const jobId = req.params.id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError("Job not found", 404);
+        }
+
+        if (user.savedJobs.includes(jobId)) {
+            throw createError("Job already saved", 400);
+        }
+
+        user.savedJobs.push(jobId);
+        await user.save();
+
+        return res.status(200).json({
+            message: "Job saved successfully",
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getSavedJobs = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId).populate({
+            path: "savedJobs",
+            select: "-created_by -applications",
+            populate: {
+                path: "company",
+                select: "name description website location logo contactInfo"
+            }
+        });
+
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        if (user.role !== "applicant") {
+            throw createError("Only applicants can view saved jobs", 403);
+        }
+
+        const formattedJobs = user.savedJobs.map(job => ({
+            id: job._id,
+            title: job.title,
+            description: job.description ? job.description.split("\n") : [],
+            requirements: job.requirements || [],
+            salary: job.salary,
+            experienceLevel: job.experienceLevel,
+            location: job.location,
+            jobType: job.jobType,
+            position: job.position,
+            company: job.company,
+            deadline: job.deadline ? job.deadline.toISOString().split("T")[0] : null,
+            benefits: job.benefits || [],
+            level: job.level,
+            createdAt: job.createdAt,
+            updatedAt: job.updatedAt
+        }));
+
+        return res.status(200).json({
+            message: "Saved jobs retrieved successfully",
+            success: true,
+            jobs: formattedJobs
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const unsaveJob = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const jobId = req.params.id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        if (!user.savedJobs.includes(jobId)) {
+            throw createError("Job not found in saved jobs", 400);
+        }
+
+        user.savedJobs = user.savedJobs.filter(id => id.toString() !== jobId);
+        await user.save();
+
+        return res.status(200).json({
+            message: "Job removed from saved jobs",
+            success: true,
+        });
+    } catch (error) {
         next(error);
     }
 };
