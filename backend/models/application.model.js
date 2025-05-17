@@ -23,6 +23,11 @@ const applicationSchema = new mongoose.Schema({
     resume: {
         type: String,
         required: true
+    },
+    rejectedAt: {
+        type: Date,
+        // index: { expires: 172800 } // 2 days
+        index: { expires: 300 } // 2 days
     }
 }, { timestamps: true });
 export const Application = mongoose.model("Application", applicationSchema);
