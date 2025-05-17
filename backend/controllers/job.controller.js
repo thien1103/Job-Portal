@@ -628,13 +628,27 @@ export const getApplicantDetails = async (req, res, next) => {
             throw createError("Applicant not found", 404);
         }
 
+        // if (!applicant.profile.isPublic) {
+        //     throw createError("This applicant's profile is not public", 403);
+        // }
+
+        let responseData;
         if (!applicant.profile.isPublic) {
-            throw createError("This applicant's profile is not public", 403);
+            responseData = {
+                _id: applicant._id,
+                fullname: applicant.fullname,
+                isPublic: false
+            };
+        } else {
+            responseData = applicant.toObject();
+            responseData.isPublic = true;
         }
 
         return res.status(200).json({
-            message: "Profile retrieved successfully",
-            user: applicant,
+            message: applicant.profile.isPublic
+                ? "Profile retrieved successfully"
+                : "Profile is private, only limited information is available",
+            user: responseData,
             success: true
         });
     } catch (error) {
