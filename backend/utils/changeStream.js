@@ -5,56 +5,45 @@ import { sendEmail } from "../middlewares/nodemailer.js";
 export const setupChangeStream = () => {
     const Application = mongoose.model("Application");
     const Job = mongoose.model("Job");
-    const User = mongoose.model("User");
 
     const changeStream = Application.watch([
         { $match: { operationType: "delete" } },
-    ]);
+    ], { fullDocument: "updateLookup" });
 
     changeStream.on("change", async (change) => {
         try {
+            console.log("Change Stream triggered for deletion:", change);
+
             const applicationId = change.documentKey._id;
+            const jobId = change.fullDocument?.job;
 
-            // Lấy Application trước khi bị xóa
-            const application = await Application.findOne({ _id: applicationId }).populate({
-                path: "job",
-                select: "title company",
-                populate: {
-                    path: "company",
-                    select: "name",
-                },
-            }).populate({
-                path: "applicant",
-                select: "fullname email",
-            });
-
-            if (!application) {
-                console.warn("Deleted application not found:", applicationId);
+            if (!jobId) {
+                console.warn("No jobId found in deleted application:", applicationId);
                 return;
             }
 
-            const jobId = application.job._id;
+            console.log(`Removing applicationId ${applicationId} from Job ${jobId}`);
 
             // Xóa applicationId khỏi Job.applications
-            await Job.updateOne(
+            const updateResult = await Job.updateOne(
                 { _id: jobId },
                 { $pull: { applications: applicationId } }
             );
 
-            // Xóa resume trên Cloudinary
-            if (application.resume) {
-                const publicId = application.resume.split("/").pop().split(".")[0];
-                await cloudinary.uploader.destroy(`resumes/${publicId}`, { resource_type: "raw" });
+            console.log("Update result:", updateResult);
+
+            if (updateResult.modifiedCount === 0) {
+                console.warn(`No changes made to Job ${jobId}. ApplicationId ${applicationId} may not exist in applications array.`);
             }
 
-            // Gửi email thông báo xóa
-            if (application.applicant?.email) {
+            // Gửi email thông báo xóa (chỉ cho TTL)
+            if (change.fullDocument?.rejectedAt && change.fullDocument?.applicant?.email) {
                 const emailSubject = "Your Job Application Has Been Deleted";
                 const emailText = `
-            Dear ${application.applicant.fullname || "Applicant"},
+            Dear ${change.fullDocument.applicant.fullname || "Applicant"},
             
-            Your application for the position "${application.job.title || "Unknown Position"}" has been automatically deleted after 5 days of being rejected.
-            Company: ${application.job.company?.name || "Unknown Company"}
+            Your application for the position "${change.fullDocument.job.title || "Unknown Position"}" has been automatically deleted after 5 days of being rejected.
+            Company: ${change.fullDocument.job.company?.name || "Unknown Company"}
             
             If you have any questions, please contact the recruiter.
             
@@ -63,26 +52,29 @@ export const setupChangeStream = () => {
           `;
                 const emailHtml = `
             <h2>Application Deleted</h2>
-            <p>Dear ${application.applicant.fullname || "Applicant"},</p>
-            <p>Your application for the position <strong>"${application.job.title || "Unknown Position"}"</strong> has been automatically deleted after 5 days of being rejected.</p>
+            <p>Dear ${change.fullDocument.applicant.fullname || "Applicant"},</p>
+            <p>Your application for the position <strong>"${change.fullDocument.job.title || "Unknown Position"}"</strong> has been automatically deleted after 5 days of being rejected.</p>
             <ul>
-              <li><strong>Company:</strong> ${application.job.company?.name || "Unknown Company"}</li>
+              <li><strong>Company:</strong> ${change.fullDocument.job.company?.name || "Unknown Company"}</li>
             </ul>
             <p>If you have any questions, please contact the recruiter.</p>
             <p>Best regards,<br>Job Portal Team</p>
           `;
                 try {
-                    await sendEmail(application.applicant.email, emailSubject, emailText, emailHtml);
+                    await sendEmail(change.fullDocument.applicant.email, emailSubject, emailText, emailHtml);
+                    console.log(`Email sent to ${change.fullDocument.applicant.email} for application ${applicationId}`);
                 } catch (emailError) {
                     console.error("Failed to send email for deleted application:", emailError.message);
                 }
             }
         } catch (error) {
-            console.error("Error in change stream:", error);
+            console.error("Error in change stream for application", applicationId, ":", error);
         }
     });
 
     changeStream.on("error", (error) => {
         console.error("Change stream error:", error);
     });
+
+    console.log("Change Stream setup complete");
 };
