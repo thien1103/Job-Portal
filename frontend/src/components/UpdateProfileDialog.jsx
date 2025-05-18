@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
+import { Textarea } from './ui/Textarea'; // Import Textarea from your UI library
 import { Button } from './ui/button';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { USER_API_END_POINT } from '@/utils/constant';
@@ -12,7 +13,6 @@ import { toast } from 'sonner';
 
 const UpdateProfileDialog = ({ open, setOpen }) => {
     const [loading, setLoading] = useState(false);
-    const [cvFile, setCvFile] = useState(null); // State for CV file
     const { user } = useSelector(store => store.auth);
 
     const [input, setInput] = useState({
@@ -21,15 +21,11 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
         skills: user?.profile?.skills?.join(", ") || "",
     });
 
-    const [experiences, setExperiences] = useState(user?.profile?.experiences || []);
-    const [educations, setEducations] = useState(user?.profile?.educations || []);
-
     const dispatch = useDispatch();
 
     const changeEventHandler = (e) => {
         setInput({ ...input, [e.target.name]: e.target.value });
     };
-
 
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -38,8 +34,6 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
             fuller: input.fullname,
             bio: input.bio,
             skills: input.skills.split(",").map(skill => skill.trim()),
-            experiences,
-            educations,
         };
 
         try {
@@ -68,7 +62,7 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
     return (
         <div>
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto" onInteractOutside={() => setOpen(false)}>
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" onInteractOutside={() => setOpen(false)}>
                     <DialogHeader>
                         <DialogTitle>Update Profile</DialogTitle>
                     </DialogHeader>
@@ -76,24 +70,34 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
                         <div className='grid gap-4 py-4'>
                             {/* Name */}
                             <div className='grid grid-cols-4 items-center gap-4'>
-                                <Label htmlFor="fullname" className="text-right">Name</Label>
-                                <Input id="fullname" name="fullname" type="text" value={input.fullname} onChange={changeEventHandler} className="col-span-3" />
+                                <Label htmlFor="fullname" className="text-right w-[20%]">Name</Label>
+                                <Input id="fullname" name="fullname" type="text" value={input.fullname} onChange={changeEventHandler} className="col-span-4" />
                             </div>
 
-
                             {/* Bio */}
-                            <div className='grid grid-cols-4 items-center gap-4'>
-                                <Label htmlFor="bio" className="text-right">Bio</Label>
-                                <Input id="bio" name="bio" value={input.bio} onChange={changeEventHandler} className="col-span-3" />
+                            <div className='grid grid-cols-4 items-start gap-4'>
+                                <Label htmlFor="bio" className="text-right w-[20%] pt-2">Bio</Label>
+                                <Textarea
+                                    id="bio"
+                                    name="bio"
+                                    value={input.bio}
+                                    onChange={changeEventHandler}
+                                    className="col-span-4 min-h-[140px]"
+                                />
                             </div>
 
                             {/* Skills */}
-                            <div className='grid grid-cols-4 items-center gap-4'>
-                                <Label htmlFor="skills" className="text-right">Skills</Label>
-                                <Input id="skills" name="skills" value={input.skills} onChange={changeEventHandler} className="col-span-3" />
+                            <div className='grid grid-cols-4 items-start gap-4'>
+                                <Label htmlFor="skills" className="text-right w-[20%] pt-2">Skills</Label>
+                                <Textarea
+                                    id="skills"
+                                    name="skills"
+                                    value={input.skills}
+                                    onChange={changeEventHandler}
+                                    className="col-span-4 min-h-[140px]"
+                                    placeholder="Enter your skills (e.g., JavaScript, Python, React)"
+                                />
                             </div>
-
-                           
                         </div>
 
                         <DialogFooter>

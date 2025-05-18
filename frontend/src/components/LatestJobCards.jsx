@@ -75,61 +75,62 @@ const LatestJobCards = ({ job, savedJobIds = [] }) => {
   };
 
   return (
-    <div className="p-5 rounded-md shadow-xl bg-white border border-gray-100">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {daysAgoFunction(job?.createdAt) === 0
-            ? "Today"
-            : `${daysAgoFunction(job?.createdAt)} days ago`}
-        </p>
-        <Button
-          variant="outline"
-          className="rounded-full"
-          size="icon"
-          onClick={isSaved ? handleUnsaveAction : handleSaveAction}
-          disabled={!user}
-          title={user ? (isSaved ? "Unsave Job" : "Save Job") : "Log in to save"}
-        >
-          <Bookmark fill={isSaved ? "#087658" : "none"} stroke={isSaved ? "#087658" : "#000"} />
-        </Button>
-      </div>
+    <div className="p-5 rounded-md shadow-xl bg-white border border-gray-100 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            {daysAgoFunction(job?.createdAt) === 0
+              ? "Today"
+              : `${daysAgoFunction(job?.createdAt)} days ago`}
+          </p>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            size="icon"
+            onClick={isSaved ? handleUnsaveAction : handleSaveAction}
+            disabled={!user}
+            title={user ? (isSaved ? "Unsave Job" : "Save Job") : "Log in to save"}
+          >
+            <Bookmark fill={isSaved ? "#087658" : "none"} stroke={isSaved ? "#087658" : "#000"} />
+          </Button>
+        </div>
 
-      <div className="flex items-center gap-2 my-2">
-        <Button className="p-6" variant="outline" size="icon">
-          <Avatar>
-            <AvatarImage src={job?.company?.logo} />
-          </Avatar>
-        </Button>
+        <div className="flex items-center gap-2 my-2">
+          <Button className="p-6" variant="outline" size="icon">
+            <Avatar>
+              <AvatarImage src={job?.company?.logo} />
+            </Avatar>
+          </Button>
+          <div>
+            <h1 className="font-medium text-lg line-clamp-1">
+              {job?.company?.name}
+            </h1>
+            <p className="text-sm text-gray-500">Vietnam</p>
+          </div>
+        </div>
+
         <div>
-          <h1 className="font-medium text-lg line-clamp-1">
-            {job?.company?.name}
-          </h1>
-          <p className="text-sm text-gray-500">Vietnam</p>
+          <h1 className="font-bold text-lg my-2 line-clamp-1">{job?.title}</h1>
+          <p className="text-sm text-gray-600 line-clamp-2 min-h-[3rem]">
+            {Array.isArray(job?.description) ? job.description.join(" ") : job?.description || "No description"}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 mt-4">
+          <Badge className="text-blue-700 font-bold" variant="ghost">
+            {job?.position} Positions
+          </Badge>
+          <Badge className="text-[#F83002] font-bold" variant="ghost">
+            {job?.jobType}
+          </Badge>
+          <Badge className="text-[#7209b7] font-bold" variant="ghost">
+            {job?.salary?.toLocaleString("vi-VN")} VND
+          </Badge>
         </div>
       </div>
-
-      <div>
-        <h1 className="font-bold text-lg my-2 line-clamp-1">{job?.title}</h1>
-        <p className="text-sm text-gray-600 line-clamp-2">
-          {Array.isArray(job?.description) ? job.description.join(" ") : job?.description || "No description"}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 mt-4">
-        <Badge className="text-blue-700 font-bold" variant="ghost">
-          {job?.position} Positions
-        </Badge>
-        <Badge className="text-[#F83002] font-bold" variant="ghost">
-          {job?.jobType}
-        </Badge>
-        <Badge className="text-[#7209b7] font-bold" variant="ghost">
-          {job?.salary?.toLocaleString("vi-VN")} VND
-        </Badge>
-      </div>
-
-      <div className="flex items-center gap-4 mt-4">
+      <div className="flex items-center justify-between mt-4">
         <Button
-          className="bg-[#087658] text-white"
+          className="bg-[#087658] text-white flex-1 mr-2"
           onClick={() => navigate(`/job/${job?.id}`)}
           variant="outline"
         >
@@ -137,7 +138,7 @@ const LatestJobCards = ({ job, savedJobIds = [] }) => {
         </Button>
         {isSaved ? (
           <Button
-            className="bg-[#065c47] text-white" // Darker green for "Job Saved"
+            className="bg-[#065c47] text-white flex-1 ml-2"
             onClick={handleUnsaveAction}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -147,7 +148,7 @@ const LatestJobCards = ({ job, savedJobIds = [] }) => {
           </Button>
         ) : (
           <Button
-            className="bg-[#087658] text-white"
+            className="bg-[#087658] text-white flex-1 ml-2"
             onClick={handleSaveAction}
             disabled={!user}
           >

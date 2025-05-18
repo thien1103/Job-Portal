@@ -235,7 +235,7 @@ const ParseCVDialog = ({ open, setOpen }) => {
               <div>
                 <Label>Description</Label>
                 <textarea
-                  className="border p-1 rounded w-full"
+                  className="border p-1 rounded w-full resize-none min-h-[90px]"
                   value={exp.description}
                   onChange={(e) => {
                     const newExps = [...experiences];
