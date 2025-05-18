@@ -114,7 +114,7 @@ const CompanySetup = () => {
               <ArrowLeft />
               <span>Back</span>
             </Button>
-            <h1 className="font-bold text-xl">Company Setup</h1>
+            <h1 className="font-bold text-xl">Update Company</h1>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

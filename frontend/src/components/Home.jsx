@@ -24,7 +24,7 @@ const Home = () => {
     <div>
       <Navbar />
       <HeroSection />
-      <TopBrands/>
+      {/* <TopBrands/> */}
       <LatestJobs />
       <CategoryCarousel />
       <OurCompanies />
