@@ -584,9 +584,9 @@ export const getApplicationDetails = async (req, res, next) => {
             });
         }
 
-        if (application.job._id.toString() !== jobId) {
-            throw createError("This application does not belong to the specified job", 403);
-        }
+        // if (application.job._id.toString() !== jobId) {
+        //     throw createError("This application does not belong to the specified job", 403);
+        // }
 
         const responseData = {
             id: application._id,
