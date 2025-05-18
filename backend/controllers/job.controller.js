@@ -509,7 +509,13 @@ export const getJobApplicants = async (req, res, next) => {
             });
 
         if (!applications || applications.length === 0) {
-            throw createError("No applications found for this job", 404);
+            // throw createError("No applications found for this job", 404);
+            const error = createError("No applications found for this job", 404);
+            return res.status(200).json({
+                message: error.message,
+                application: null,
+                success: true
+            });
         }
 
         const applicantsFromApplication = applications.map(app => ({
@@ -570,7 +576,12 @@ export const getApplicationDetails = async (req, res, next) => {
             });
 
         if (!application) {
-            throw createError("Application not found", 404);
+            const error = createError("Application not found", 404);
+            return res.status(200).json({
+                message: error.message,
+                application: null,
+                success: true
+            });
         }
 
         if (application.job._id.toString() !== jobId) {
