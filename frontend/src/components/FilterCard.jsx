@@ -27,9 +27,15 @@ const filterData = [
   {
     filterType: "Location",
     key: "location",
-    options: ["Hồ Chí Minh", "Hà Nội"],
+    options: ["Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Others"],
   },
 ];
+
+// Helper function to map API response locations to filter options
+const mapLocationToFilter = (location) => {
+  const predefinedLocations = ["Hồ Chí Minh", "Hà Nội", "Đà Nẵng"];
+  return predefinedLocations.includes(location) ? location : "Others";
+};
 
 const FilterCard = () => {
   const [filters, setFilters] = useState({
@@ -86,6 +92,7 @@ const FilterCard = () => {
           >
             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
               {data.options.map((item, idx) => {
+                const displayValue = item === "Others" ? "Other Locations" : item;
                 const itemId = `${data.key}-${idx}`;
                 return (
                   <div key={itemId} className="flex items-center space-x-2">
@@ -94,7 +101,7 @@ const FilterCard = () => {
                       id={itemId}
                       className="text-green-800 accent-green-800"
                     />
-                    <Label htmlFor={itemId}>{item}</Label>
+                    <Label htmlFor={itemId}>{displayValue}</Label>
                   </div>
                 );
               })}
@@ -117,4 +124,4 @@ const FilterCard = () => {
   );
 };
 
-export default FilterCard;
+export { FilterCard, mapLocationToFilter };

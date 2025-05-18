@@ -1,6 +1,6 @@
+import { FilterCard, mapLocationToFilter } from './FilterCard'; // Use named imports
 import React, { useEffect, useState, useCallback } from 'react';
 import Navbar from './shared/Navbar';
-import FilterCard from './FilterCard';
 import Job from './Job';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,7 +28,12 @@ const Jobs = () => {
         withCredentials: true,
       });
       if (res.data.success) {
-        dispatch(setAllJobs(res.data.jobs || []));
+        // Map location to locationType for each job
+        const jobsWithLocationType = res.data.jobs.map(job => ({
+          ...job,
+          locationType: mapLocationToFilter(job.location || ''), // Fallback to empty string if location is undefined
+        }));
+        dispatch(setAllJobs(jobsWithLocationType || []));
       }
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
@@ -94,13 +99,15 @@ const Jobs = () => {
     if (searchedQuery && Object.values(searchedQuery).some(val => val)) {
       filteredJobs = filteredJobs.filter((job) => {
         const matchesJobType = searchedQuery.jobType
-          ? job.jobType.toLowerCase() === searchedQuery.jobType.toLowerCase()
+          ? job.jobType?.toLowerCase() === searchedQuery.jobType.toLowerCase()
           : true;
         const matchesLevel = searchedQuery.level
           ? (job.level || '').toLowerCase() === searchedQuery.level.toLowerCase()
           : true;
         const matchesLocation = searchedQuery.location
-          ? ['hồ chí minh', 'hà nội'].includes(job.location?.toLowerCase())
+          ? (searchedQuery.location === "Others"
+              ? job.locationType === "Others"
+              : (job.locationType || '').toLowerCase() === searchedQuery.location.toLowerCase())
           : true;
         return matchesJobType && matchesLevel && matchesLocation;
       });

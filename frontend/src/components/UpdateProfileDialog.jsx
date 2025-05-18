@@ -17,8 +17,6 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
 
     const [input, setInput] = useState({
         fullname: user?.fullname || "",
-        email: user?.email || "",
-        phoneNumber: user?.phoneNumber || "",
         bio: user?.profile?.bio || "",
         skills: user?.profile?.skills?.join(", ") || "",
     });
@@ -38,8 +36,6 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
 
         const dataToSubmit = {
             fuller: input.fullname,
-            email: input.email,
-            phoneNumber: input.phoneNumber,
             bio: input.bio,
             skills: input.skills.split(",").map(skill => skill.trim()),
             experiences,
@@ -84,17 +80,6 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
                                 <Input id="fullname" name="fullname" type="text" value={input.fullname} onChange={changeEventHandler} className="col-span-3" />
                             </div>
 
-                            {/* Email */}
-                            <div className='grid grid-cols-4 items-center gap-4'>
-                                <Label htmlFor="email" className="text-right">Email</Label>
-                                <Input id="email" name="email" type="email" value={input.email} onChange={changeEventHandler} className="col-span-3" />
-                            </div>
-
-                            {/* Phone Number */}
-                            <div className='grid grid-cols-4 items-center gap-4'>
-                                <Label htmlFor="phoneNumber" className="text-right">Phone Number</Label>
-                                <Input id="phoneNumber" name="phoneNumber" value={input.phoneNumber} onChange={changeEventHandler} className="col-span-3" />
-                            </div>
 
                             {/* Bio */}
                             <div className='grid grid-cols-4 items-center gap-4'>

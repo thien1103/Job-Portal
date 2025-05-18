@@ -1,14 +1,33 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Async thunk để fetch danh sách công việc (có thể kèm theo query params search/filter)
 export const fetchAllJobs = createAsyncThunk(
   "searchJob/fetchAllJobs",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const query = new URLSearchParams(params).toString();
-      const res = await axios.get(`/api/jobs?${query}`, { withCredentials: true });
-      return res.data.data; // Use res.data.data instead of res.data.jobs
+      // Xử lý logic location
+      const processedParams = {
+        ...params,
+        ...(params.location === 'Others' && { 
+          location: 'custom',
+          excludeLocations: ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng'] 
+        })
+      };
+
+      const query = new URLSearchParams(processedParams).toString();
+      const res = await axios.get(`/api/jobs?${query}`, { 
+        withCredentials: true 
+      });
+      
+      // Xử lý thêm location type
+      const jobsWithLocationType = res.data.data.map(job => ({
+        ...job,
+        locationType: ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng'].includes(job.location) 
+          ? job.location 
+          : 'Others'
+      }));
+      
+      return jobsWithLocationType;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }

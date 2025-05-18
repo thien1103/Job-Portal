@@ -150,7 +150,7 @@ const Navbar = () => {
               <ul className='flex font-[500] items-center gap-5'>
                 {user && user.role === 'recruiter' ? (
                   <>
-                    <NavItem itemName='Companies' to='/recruiter/companies' />
+                    <NavItem itemName='Company' to='/recruiter/companies' />
                     <NavItem itemName='Jobs' to='/recruiter/jobs' />
                   </>
                 ) : (

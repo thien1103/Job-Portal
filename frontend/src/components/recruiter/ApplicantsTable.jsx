@@ -52,31 +52,31 @@ const ApplicantsTable = () => {
   };
 
   useEffect(() => {
-  const fetchApplicantsData = async () => {
-    if (applicants?.length === 0) {
-      setNoApplicants(true);
-      setLoading(false);
-      return;
-    }
+    const fetchApplicantsData = async () => {
+      setLoading(true); // Ensure loading starts as true
+      setNoApplicants(false); // Reset noApplicants
 
-    const promises = applicants.map((applicant) => {
-      const id = applicant.applicationId;
-      if (!detailedApplicants[id]) {
-        return fetchApplicationDetails(params.id, id);
+      // If applicants is null, undefined, or an empty array, show "No Applicants"
+      if (!applicants || applicants.length === 0) {
+        setNoApplicants(true);
+        setLoading(false);
+        return;
       }
-      return null;
-    });
 
-    await Promise.all(promises.filter(Boolean));
-    setLoading(false);
-  };
+      const promises = applicants.map((applicant) => {
+        const id = applicant.applicationId;
+        if (!detailedApplicants[id]) {
+          return fetchApplicationDetails(params.id, id);
+        }
+        return null;
+      });
 
-  // Gọi một lần khi applicants thay đổi thôi
-  if (applicants) {
+      await Promise.all(promises.filter(Boolean));
+      setLoading(false);
+    };
+
     fetchApplicantsData();
-  }
-}, [applicants, params.id]); // ❌ bỏ detailedApplicants ra khỏi dependency
-
+  }, [applicants, params.id]); // Dependencies: applicants and params.id
 
   const statusHandler = async (status, id) => {
     setStatusLoading((prev) => ({ ...prev, [id]: true }));

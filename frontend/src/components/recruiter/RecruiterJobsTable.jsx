@@ -9,12 +9,23 @@ import {
   TableRow,
 } from "../ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Edit2, Eye, MoreHorizontal } from "lucide-react";
+import { Edit2, Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { JOB_API_END_POINT } from "@/utils/constant";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
 
 // Utility to limit concurrent promises
 const limitConcurrency = (tasks, limit) => {
@@ -53,6 +64,8 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
   const { searchJobByText } = useSelector((store) => store.job);
   const [filterJobs, setFilterJobs] = useState([]);
   const [applicantCounts, setApplicantCounts] = useState({});
+  const [openDialog, setOpenDialog] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState(null);
   const navigate = useNavigate();
 
   // Fetch applicant counts for all jobs
@@ -81,7 +94,10 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
             error.message,
             error.response?.data
           );
-          toast.error(`Failed to fetch applicants for job ${job.title}`);
+          // Only show toast for non-404 errors
+          if (error.response?.status !== 404) {
+            toast.error(`Failed to fetch applicants for job ${job.title}`);
+          }
           return { jobId: job.id, count: 0 };
         }
       });
@@ -115,6 +131,33 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
       : [];
     setFilterJobs(filtered);
   }, [jobs, searchJobByText]);
+
+  // Handler to open the delete confirmation dialog
+  const deleteJobHandler = (jobId) => {
+    setJobToDelete(jobId);
+    setOpenDialog(true);
+  };
+
+  // Handler to confirm deletion
+  const confirmDelete = async () => {
+    if (!jobToDelete) return;
+
+    try {
+      const res = await axios.delete(`${JOB_API_END_POINT}/post/${jobToDelete}`, {
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        toast.success(res.data.message);
+        // Refresh the page to update the job list
+        window.location.reload();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete job");
+    } finally {
+      setOpenDialog(false);
+      setJobToDelete(null);
+    }
+  };
 
   return (
     <Table className="bg-white rounded-full shadow-sm">
@@ -223,6 +266,41 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
                         )}
                       </div>
                     </div>
+                    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                      <DialogTrigger asChild>
+                        <div
+                          onClick={() => deleteJobHandler(job.id)}
+                          className="flex items-center gap-2 w-fit cursor-pointer mt-2 text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Are you sure?</DialogTitle>
+                          <DialogDescription>
+                            This action cannot be undone. This will permanently delete the job posting.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button
+                              variant="outline"
+                              onClick={() => setJobToDelete(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </DialogClose>
+                          <Button
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </PopoverContent>
                 </Popover>
               </TableCell>
