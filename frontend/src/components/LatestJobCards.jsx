@@ -10,18 +10,15 @@ import { USER_API_END_POINT } from "@/utils/constant";
 import { toast } from "sonner";
 import { setSavedJobIds } from "@/redux/jobSlice";
 
-const LatestJobCards = ({ job }) => {
+const LatestJobCards = ({ job, savedJobIds = [] }) => {
   const navigate = useNavigate();
-  const { user } = useSelector((store) => store.auth); // Get user from store.auth
-  const { savedJobIds = [] } = useSelector((store) => store.job); // Get savedJobIds from store.job
+  const { user } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
   const [isSaved, setIsSaved] = useState(savedJobIds.includes(job?.id));
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    // Debug logs to verify state
     console.log("User:", user, "Saved Job IDs:", savedJobIds, "Job ID:", job?.id, "Is Saved:", isSaved);
-    // Update isSaved when savedJobIds or job changes
     setIsSaved(savedJobIds.includes(job?.id));
   }, [job?.id, savedJobIds]);
 
@@ -140,7 +137,7 @@ const LatestJobCards = ({ job }) => {
         </Button>
         {isSaved ? (
           <Button
-            className="bg-[#087658]"
+            className="bg-[#065c47] text-white" // Darker green for "Job Saved"
             onClick={handleUnsaveAction}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -150,7 +147,7 @@ const LatestJobCards = ({ job }) => {
           </Button>
         ) : (
           <Button
-            className="bg-[#087658]"
+            className="bg-[#087658] text-white"
             onClick={handleSaveAction}
             disabled={!user}
           >

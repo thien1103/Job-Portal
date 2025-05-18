@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/Textarea"; // Import the new Textarea
 
 const JobDescription = () => {
   const { singleJob, savedJobIds } = useSelector((store) => store.job);
@@ -62,7 +63,6 @@ const JobDescription = () => {
   }, [jobId, user]);
 
   useEffect(() => {
-    // Check if job is saved based on savedJobIds
     setIsSaved(savedJobIds.includes(jobId));
   }, [savedJobIds, jobId]);
 
@@ -160,16 +160,13 @@ const JobDescription = () => {
       return;
     }
 
-    if (!coverLetter.trim()) {
-      toast.error("Please provide a cover letter.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append("file", cvFile);
-      formData.append("coverLetter", coverLetter);
+      if (coverLetter.trim()) {
+        formData.append("coverLetter", coverLetter); // Only append if not empty
+      }
 
       console.log("Sending request to:", `${APPLICATION_API_END_POINT}/apply/${jobId}`);
       console.log("Cookies:", document.cookie);
@@ -330,10 +327,10 @@ const JobDescription = () => {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="cover-letter">Cover Letter</Label>
-                <Input
+                <Label htmlFor="cover-letter">Cover Letter (Optional)</Label>
+                <Textarea
                   id="cover-letter"
-                  placeholder="Write your cover letter here..."
+                  placeholder="Write your cover letter here (optional)..."
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   rows={5}

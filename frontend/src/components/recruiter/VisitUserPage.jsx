@@ -346,7 +346,7 @@ const VisitUserPage = () => {
                   </div>
 
                   <div className="mt-4 flex justify-end items-center gap-2">
-                    <a
+                    {/* <a
                       className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded cursor-pointer"
                       onClick={async (e) => {
                         e.preventDefault();
@@ -378,7 +378,7 @@ const VisitUserPage = () => {
                         className="w-5 h-5 inline-block mr-1"
                       />
                       Download
-                    </a>
+                    </a> */}
                     <a
                       href={resumeUrl.cv.resume}
                       target="_blank"

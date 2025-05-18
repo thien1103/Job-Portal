@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import CompaniesTable from "./CompaniesTable";
 import { useNavigate } from "react-router-dom";
 import useGetAllCompanies from "@/hooks/useGetAllCompanies";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setSearchCompanyByText } from "@/redux/companySlice";
 import debounce from "lodash/debounce";
 
@@ -15,6 +15,9 @@ const Companies = () => {
   const [input, setInput] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Get companies from the Redux store (correct key: companies, not allCompanies)
+  const { companies } = useSelector((store) => store.company);
 
   // Debounced dispatch function
   const debouncedDispatch = debounce((value) => {
@@ -41,9 +44,11 @@ const Companies = () => {
             placeholder="Filter by name"
             onChange={(e) => setInput(e.target.value)}
           />
-          <Button onClick={() => navigate("/recruiter/companies/create")}>
-            New Company
-          </Button>
+          {(!companies || companies.length === 0) && (
+            <Button onClick={() => navigate("/recruiter/companies/create")}>
+              New Company
+            </Button>
+          )}
         </div>
         <CompaniesTable />
       </div>

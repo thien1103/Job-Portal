@@ -36,10 +36,10 @@ const CompaniesTable = () => {
 
   return (
     <div>
-      <Table>
+      <Table className="bg-white rounded-full shadow-sm">
         <TableCaption>A list of your recent registered companies</TableCaption>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-white hover:bg-gray-50">
             <TableHead>Logo</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Location</TableHead>
@@ -50,37 +50,33 @@ const CompaniesTable = () => {
         </TableHeader>
         <TableBody>
           {filteredCompanies.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center">
+            <TableRow className="bg-white">
+              <TableCell colSpan={6} className="text-center bg-white">
                 No Companies Found
               </TableCell>
             </TableRow>
           ) : (
             filteredCompanies.map((company) => (
-              <TableRow key={company._id}>
-                <TableCell>
+              <TableRow key={company._id} className="bg-white hover:bg-gray-50">
+                <TableCell className="bg-white">
                   <Avatar>
                     <AvatarImage src={company.logo} />
                   </Avatar>
                 </TableCell>
-                <TableCell>
+                <TableCell className="bg-white">
                   <div
-                  className="cursor-pointer underline text-blue-600"
+                    className="cursor-pointer underline text-blue-600"
                     onClick={() => navigate(`/company/${company._id}`)}
                   >
                     {company.name}
                   </div>
                 </TableCell>
-                <TableCell>
-                  {company.location}
-                </TableCell>
-                <TableCell>
-                  {company.contactInfo.phone}
-                </TableCell>
-                <TableCell>
+                <TableCell className="bg-white">{company.location}</TableCell>
+                <TableCell className="bg-white">{company.contactInfo.phone}</TableCell>
+                <TableCell className="bg-white">
                   {new Date(company.createdAt).toLocaleDateString()}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right bg-white">
                   <Popover>
                     <PopoverTrigger>
                       <MoreHorizontal />

@@ -21,7 +21,6 @@ const Job = ({ job, isSavedJobsPage, savedJobIds = [] }) => {
     if (job) {
       console.log("Job data from backend:", job);
     }
-    // Update isSaved when savedJobIds or job changes
     setIsSaved(isSavedJobsPage || savedJobIds.includes(job?.id));
   }, [job, savedJobIds, isSavedJobsPage]);
 
@@ -140,7 +139,7 @@ const Job = ({ job, isSavedJobsPage, savedJobIds = [] }) => {
         </Button>
         {isSaved ? (
           <Button
-            className="bg-[#087658]"
+            className="bg-[#065c47] text-white" // Darker green for "Job Saved"
             onClick={handleUnsaveAction}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -149,7 +148,7 @@ const Job = ({ job, isSavedJobsPage, savedJobIds = [] }) => {
           </Button>
         ) : (
           <Button
-            className="bg-[#087658]"
+            className="bg-[#087658] text-white"
             onClick={handleSaveAction}
             disabled={!user}
           >

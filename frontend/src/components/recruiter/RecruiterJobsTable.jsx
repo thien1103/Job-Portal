@@ -66,14 +66,20 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
             `${JOB_API_END_POINT}/${job.id}/applications`,
             { withCredentials: true, timeout: 5000 }
           );
+          console.log(`API response for job ${job.id}:`, res.data); // Log full response for debugging
           if (res.data.success) {
-            return { jobId: job.id, count: res.data.applications.length };
+            // Check if applications exists and is an array, default to empty array if not
+            const applications = Array.isArray(res.data.applications)
+              ? res.data.applications
+              : [];
+            return { jobId: job.id, count: applications.length };
           }
           return { jobId: job.id, count: 0 };
         } catch (error) {
           console.error(
             `Error fetching applicants for job ${job.id}:`,
-            error.message
+            error.message,
+            error.response?.data
           );
           toast.error(`Failed to fetch applicants for job ${job.title}`);
           return { jobId: job.id, count: 0 };
@@ -111,10 +117,10 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
   }, [jobs, searchJobByText]);
 
   return (
-    <Table>
+    <Table className="bg-white rounded-full shadow-sm">
       <TableCaption>A list of your recent posted jobs</TableCaption>
       <TableHeader>
-        <TableRow>
+        <TableRow className="bg-white hover:bg-gray-50">
           <TableHead>Company</TableHead>
           <TableHead>Job Name</TableHead>
           <TableHead>Type</TableHead>
@@ -129,21 +135,21 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
       </TableHeader>
       <TableBody>
         {loading ? (
-          <TableRow>
-            <TableCell colSpan={10} className="text-center">
+          <TableRow className="bg-white">
+            <TableCell colSpan={10} className="text-center bg-white">
               Loading...
             </TableCell>
           </TableRow>
         ) : filterJobs.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={10} className="text-center">
+          <TableRow className="bg-white">
+            <TableCell colSpan={10} className="text-center bg-white">
               No Job Found
             </TableCell>
           </TableRow>
         ) : (
           filterJobs.map((job) => (
-            <TableRow key={job.id}>
-              <TableCell>
+            <TableRow key={job.id} className="bg-white hover:bg-gray-50">
+              <TableCell className="bg-white">
                 <div
                   className="cursor-pointer underline text-blue-600"
                   onClick={() => navigate(`/company/${job.company._id}`)}
@@ -151,15 +157,15 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
                   {job.company?.name}
                 </div>
               </TableCell>
-              <TableCell>{job.title}</TableCell>
-              <TableCell>{job.jobType}</TableCell>
-              <TableCell>{job.level}</TableCell>
-              <TableCell>{job.location}</TableCell>
-              <TableCell>{job.salary.toLocaleString()}₫</TableCell>
-              <TableCell>{job.position}</TableCell>
-              <TableCell>{job.deadline}</TableCell>
-              <TableCell>{job.createdAt.split("T")[0]}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="bg-white">{job.title}</TableCell>
+              <TableCell className="bg-white">{job.jobType}</TableCell>
+              <TableCell className="bg-white">{job.level}</TableCell>
+              <TableCell className="bg-white">{job.location}</TableCell>
+              <TableCell className="bg-white">{job.salary.toLocaleString()}₫</TableCell>
+              <TableCell className="bg-white">{job.position}</TableCell>
+              <TableCell className="bg-white">{job.deadline}</TableCell>
+              <TableCell className="bg-white">{job.createdAt.split("T")[0]}</TableCell>
+              <TableCell className="text-right bg-white">
                 <Popover>
                   <PopoverTrigger>
                     <div className="relative w-6 h-6 flex items-center justify-center">
@@ -182,8 +188,7 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
                       )}
                     </div>
                   </PopoverTrigger>
-
-                  <PopoverContent className="w-36">
+                  <PopoverContent className="w-40">
                     <div
                       onClick={() => navigate(`/recruiter/jobs/edit/${job.id}`)}
                       className="flex items-center gap-2 w-fit cursor-pointer"
@@ -199,8 +204,7 @@ const RecruiterJobsTable = ({ jobs, loading }) => {
                     >
                       <Eye className="w-4 h-4" />
                       <div className="relative flex items-center">
-                        <span>Applicants</span>
-
+                        <span>Applications</span>
                         {applicantCounts[job.id] > 0 && (
                           <div className="absolute -top-2 -right-4 w-4 h-4">
                             <img

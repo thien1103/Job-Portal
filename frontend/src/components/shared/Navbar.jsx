@@ -242,19 +242,21 @@ const Navbar = () => {
                       </div>
                       <div className='flex flex-col my-2 text-gray-600'>
                         {user.role === 'applicant' && (
-                          <div className='flex items-center gap-2 cursor-pointer'>
-                            <User2 />
-                            <Button variant="link">
-                              <Link to="/profile">View Profile</Link>
-                            </Button>
-                          </div>
-                        )}
-                        <div className='flex items-center gap-2 cursor-pointer'>
+                          <>
+                            <div className='flex items-center gap-2 cursor-pointer'>
+                              <User2 />
+                              <Button variant="link">
+                                <Link to="/profile">View Profile</Link>
+                              </Button>
+                            </div>
+                            <div className='flex items-center gap-2 cursor-pointer'>
                               <Heart />
                               <Button variant="link">
                                 <Link to="/saved-jobs">Saved Jobs</Link>
                               </Button>
                             </div>
+                          </>
+                        )}
                         <div className='flex items-center gap-2 cursor-pointer'>
                           <LogOut />
                           <Button onClick={logoutHandler} variant="link">
@@ -292,7 +294,10 @@ const Navbar = () => {
                     <NavItem itemName='Jobs' to='/jobs' onClick={() => setIsOpen(false)} />
                     <NavItem itemName='Career Handbook' to='/careerHandbook' onClick={() => setIsOpen(false)} />
                     {user && user.role === 'applicant' && (
-                      <NavItem itemName='My CV' to='/myCV' onClick={() => setIsOpen(false)} />
+                      <>
+                        <NavItem itemName='My CV' to='/myCV' onClick={() => setIsOpen(false)} />
+                        <NavItem itemName='Saved Jobs' to='/saved-jobs' onClick={() => setIsOpen(false)} />
+                      </>
                     )}
                   </>
                 )}
