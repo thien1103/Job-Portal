@@ -9,17 +9,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { USER_API_END_POINT } from '@/utils/constant';
 import { setUser } from '@/redux/authSlice';
+import { resetJobState } from '@/redux/jobSlice';
+import { resetCompanyState } from '@/redux/companySlice';
+import { resetApplicationState } from '@/redux/applicationSlice';
 import { toast } from 'sonner';
 import logo from '../../assets/logo.png';
 import NavBarBanner from "../ui/navbar_banner";
 
-// Animation variants for the logo
+// Animation variants
 const logoVariants = {
   hidden: { opacity: 0, x: -50 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
 };
 
-// Animation variants for nav items
 const navItemVariants = {
   hidden: { opacity: 0, y: -20 },
   visible: (i) => ({
@@ -34,28 +36,27 @@ const navItemVariants = {
   },
 };
 
-// Animation variants for buttons/avatar
 const buttonVariants = {
   hidden: { opacity: 0, x: 20 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
   hover: { scale: 1.05, transition: { duration: 0.2 } },
 };
 
-// Animation variants for mobile menu
 const menuVariants = {
   open: { opacity: 1, x: 0, transition: { duration: 0.3, ease: 'easeInOut' } },
   closed: { opacity: 0, x: '-100%', transition: { duration: 0.3, ease: 'easeInOut' } },
 };
 
-// Hamburger line animations
 const lineVariants = {
   open: { rotate: 45, y: 6 },
   closed: { rotate: 0, y: 0 },
 };
+
 const line2Variants = {
   open: { opacity: 0 },
   closed: { opacity: 1 },
 };
+
 const line3Variants = {
   open: { rotate: -45, y: -6 },
   closed: { rotate: 0, y: 0 },
@@ -116,6 +117,9 @@ const Navbar = () => {
       const res = await axios.get(`${USER_API_END_POINT}/logout`, { withCredentials: true });
       if (res.data.success) {
         dispatch(setUser(null));
+        dispatch(resetJobState());
+        dispatch(resetCompanyState());
+        dispatch(resetApplicationState());
         navigate("/");
         toast.success(res.data.message);
       }

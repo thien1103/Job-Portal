@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { Textarea } from "../ui/Textarea"; // Fixed import case (Textarea to textarea)
 import axios from "axios";
 import { COMPANY_API_END_POINT } from "@/utils/constant";
 import { useNavigate, useParams } from "react-router-dom";
@@ -17,7 +18,7 @@ const CompanySetup = () => {
   const dispatch = useDispatch();
   const { singleCompany } = useSelector((store) => store.company);
   const [loading, setLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true); // New loading state for fetch
+  const [isFetching, setIsFetching] = useState(true);
   const [input, setInput] = useState({
     name: "",
     description: "",
@@ -26,10 +27,8 @@ const CompanySetup = () => {
     file: null,
   });
 
-  // Fetch company data
   useGetCompanyById(params.id);
 
-  // Update input state when singleCompany is fetched
   useEffect(() => {
     console.log("singleCompany updated:", singleCompany);
     if (singleCompany) {
@@ -67,7 +66,7 @@ const CompanySetup = () => {
     }
     try {
       setLoading(true);
-      console.log('api ', `${COMPANY_API_END_POINT}/update/${params.id}`)
+      console.log("api ", `${COMPANY_API_END_POINT}/update/${params.id}`);
       const res = await axios.patch(
         `${COMPANY_API_END_POINT}/update/${params.id}`,
         formData,
@@ -90,10 +89,9 @@ const CompanySetup = () => {
     }
   };
 
-  // Show loading spinner while fetching company data
   if (isFetching) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-full">
         <Loader2 className="mr-2 h-8 w-8 animate-spin" />
         <span>Loading company data...</span>
       </div>
@@ -103,7 +101,7 @@ const CompanySetup = () => {
   return (
     <div>
       <Navbar />
-      <div className="max-w-xl mx-auto my-10">
+      <div className="max-w-xl mx-auto my-4 px-4">
         <form onSubmit={submitHandler}>
           <div className="flex items-center gap-5 p-8">
             <Button
@@ -116,25 +114,29 @@ const CompanySetup = () => {
             </Button>
             <h1 className="font-bold text-xl">Update Company</h1>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Company Name</Label>
-              <Input
-                type="text"
-                name="name"
-                value={input.name}
-                onChange={changeEventHandler}
-              />
+          <div className="space-y-6">
+            {/* Company Name and Location in one row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Company Name</Label>
+                <Input
+                  type="text"
+                  name="name"
+                  value={input.name}
+                  onChange={changeEventHandler}
+                />
+              </div>
+              <div>
+                <Label>Location</Label>
+                <Input
+                  type="text"
+                  name="location"
+                  value={input.location}
+                  onChange={changeEventHandler}
+                />
+              </div>
             </div>
-            <div>
-              <Label>Description</Label>
-              <Input
-                type="text"
-                name="description"
-                value={input.description}
-                onChange={changeEventHandler}
-              />
-            </div>
+            {/* Website */}
             <div>
               <Label>Website</Label>
               <Input
@@ -144,15 +146,18 @@ const CompanySetup = () => {
                 onChange={changeEventHandler}
               />
             </div>
+            {/* Description (full width) */}
             <div>
-              <Label>Location</Label>
-              <Input
-                type="text"
-                name="location"
-                value={input.location}
+              <Label>Description</Label>
+              <Textarea
+                name="description"
+                value={input.description}
                 onChange={changeEventHandler}
+                rows={4}
+                placeholder="Enter company description"
               />
             </div>
+            {/* Logo */}
             <div>
               <Label>Logo</Label>
               <Input
@@ -163,11 +168,11 @@ const CompanySetup = () => {
             </div>
           </div>
           {loading ? (
-            <Button className="w-full my-4">
+            <Button className="w-full mt-6" disabled>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
             </Button>
           ) : (
-            <Button type="submit" className="w-full my-4">
+            <Button type="submit" className="w-full mt-6">
               Update
             </Button>
           )}

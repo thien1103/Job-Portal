@@ -3,6 +3,7 @@ import Navbar from '../shared/Navbar';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { Textarea } from '../ui/Textarea';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { COMPANY_API_END_POINT } from '@/utils/constant';
@@ -50,13 +51,38 @@ const CompanyCreate = () => {
 
         const trimmedCompanyName = input.companyName.trim();
         const trimmedDescription = input.description.trim();
+        const trimmedWebsite = input.website.trim();
+        const trimmedLocation = input.location.trim();
+        const trimmedContactEmail = input.contactEmail.trim();
+        const trimmedContactPhone = input.contactPhone.trim();
 
+        // Blank field validations
         if (!trimmedCompanyName) {
             toast.error('Company name is required');
             return;
         }
         if (!trimmedDescription) {
             toast.error('Description is required');
+            return;
+        }
+        if (!trimmedWebsite) {
+            toast.error('Website is required');
+            return;
+        }
+        if (!trimmedLocation) {
+            toast.error('Location is required');
+            return;
+        }
+        if (!trimmedContactEmail) {
+            toast.error('Contact email is required');
+            return;
+        }
+        if (!trimmedContactPhone) {
+            toast.error('Contact phone is required');
+            return;
+        }
+        if (!input.file) {
+            toast.error('Company logo is required');
             return;
         }
 
@@ -67,13 +93,11 @@ const CompanyCreate = () => {
             const formData = new FormData();
             formData.append('companyName', trimmedCompanyName);
             formData.append('description', trimmedDescription);
-            formData.append('website', input.website || '');
-            formData.append('location', input.location || '');
-            formData.append('contactEmail', input.contactEmail || '');
-            formData.append('contactPhone', input.contactPhone || '');
-            if (input.file) {
-                formData.append('file', input.file);
-            }
+            formData.append('website', trimmedWebsite);
+            formData.append('location', trimmedLocation);
+            formData.append('contactEmail', trimmedContactEmail);
+            formData.append('contactPhone', trimmedContactPhone);
+            formData.append('file', input.file);
 
             // Debug: Log FormData contents
             console.log('Submitting FormData:');
@@ -124,13 +148,13 @@ const CompanyCreate = () => {
 
                     <div className="my-2">
                         <Label>Description</Label>
-                        <Input
-                            type="text"
-                            name="description"
-                            value={input.description}
-                            onChange={changeEventHandler}
-                            placeholder="Tell us about your company"
-                        />
+                        <Textarea
+                                        name="description"
+                                        value={input.description}
+                                        onChange={changeEventHandler}
+                                        rows={4}
+                                        placeholder="Enter company description"
+                                      />
                     </div>
 
                     <div className="my-2">

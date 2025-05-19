@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "./shared/Navbar";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { Contact, Mail, Pen, Check, Trash, Eye } from "lucide-react";
+import { Contact, Mail, Pen, Check, Trash } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import {
@@ -71,6 +71,12 @@ const ParseCVDialog = ({ open, setOpen }) => {
       });
       if (res.data.success) {
         const { user } = res.data;
+        // Validate that the parsed data contains meaningful content
+        if (!user?.profile?.skills?.length && !user?.profile?.experience?.length && !user?.profile?.education?.length) {
+          toast.error('Please provide correct CV file.');
+          return;
+        }
+        console.log("CV Parse Response:", res.data); // Log the response data
         setUserProfile({
           skills: user.profile.skills ? user.profile.skills.join(', ') : '',
         });
@@ -94,7 +100,7 @@ const ParseCVDialog = ({ open, setOpen }) => {
             }))
           : [{ university: '', major: '', startYear: '', endYear: 'Present' }];
         setEducations(parsedEducations);
-
+                console.log("CV Parse Response:", res.data); // Log the response data
         toast.success('CV parsed successfully!');
       }
     } catch (error) {
@@ -308,6 +314,7 @@ const ParseCVDialog = ({ open, setOpen }) => {
   );
 };
 
+// Rest of Profile.jsx remains unchanged
 const Profile = () => {
   useGetAppliedJobs();
   const [open, setOpen] = useState(false);
@@ -564,7 +571,7 @@ const Profile = () => {
   };
 
   return (
-    <div>
+    <div className="h-[200vh]">
       <Navbar />
       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
         <div className="flex justify-between">
@@ -878,7 +885,7 @@ const Profile = () => {
         </Button>
       </div>
 
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl mt-9 mb-9">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl mt-10 flex flex-col justify-center text-center aligns-center">
         <h1 className="font-bold text-lg my-5">Applied Jobs</h1>
         <AppliedJobTable />
       </div>

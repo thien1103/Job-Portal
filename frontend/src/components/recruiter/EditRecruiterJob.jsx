@@ -4,6 +4,7 @@ import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useSelector } from "react-redux";
+import { Textarea } from "../ui/Textarea";
 import {
   Select,
   SelectContent,
@@ -202,13 +203,12 @@ const EditJob = () => {
               </div>
               <div>
                 <Label>Description (Separate lines with Enter)</Label>
-                <Input
-                  type="text"
+                <Textarea
                   name="description"
                   value={input.description}
                   onChange={changeEventHandler}
-                  className="focus-visible:ring-offset-0 focus-visible:ring-0 my-1"
-                  placeholder="Enter each description point on a new line"
+                  rows={5}
+                  placeholder="Enter company description"
                 />
               </div>
               <div>

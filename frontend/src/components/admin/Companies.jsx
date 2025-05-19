@@ -3,13 +3,24 @@ import { ADMIN_API_END_POINT } from "@/utils/constant";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const Companies = () => {
   const [companies, setCompanies] = useState([]);
   const [allCompanies, setAllCompanies] = useState([]);
   const [filterText, setFilterText] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
 
-  // Fetch companies
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
@@ -34,18 +45,17 @@ const Companies = () => {
     fetchCompanies();
   }, []);
 
-  // Handle filter across name, owner (userId.fullname), and owner email (userId.email)
   const handleFilterChange = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setFilterText(value);
     if (value === "") {
       setCompanies(allCompanies);
     } else {
       setCompanies(
         allCompanies.filter((company) => {
-          const nameMatch = company.name.toLowerCase().includes(value);
-          const ownerMatch = company.userId?.fullname?.toLowerCase().includes(value) || false;
-          const emailMatch = company.userId?.email?.toLowerCase().includes(value) || false;
+          const nameMatch = company.name.includes(value);
+          const ownerMatch = company.userId?.fullname?.includes(value) || false;
+          const emailMatch = company.userId?.email?.includes(value) || false;
           return nameMatch || ownerMatch || emailMatch;
         })
       );
@@ -61,19 +71,22 @@ const Companies = () => {
       const result = await response.json();
       if (result.success) {
         toast.success("Company deleted successfully!");
-        setCompanies(companies.filter((company) => company._id !== _id));
-        setAllCompanies(allCompanies.filter((company) => company._id !== _id));
+        setCompanies(companies.filter((c) => c._id !== _id));
+        setAllCompanies(allCompanies.filter((c) => c._id !== _id));
       }
     } catch (error) {
       toast.error("Error deleting company!");
       console.error("Error deleting company:", error);
+    } finally {
+      setSelectedCompanyId(null);
     }
   };
 
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Companies Management</h2>
-      {/* Filter Row */}
+
+      {/* Filter */}
       <div className="mb-4 p-4 bg-white rounded shadow flex items-center">
         <div className="relative w-1/3">
           <input
@@ -88,7 +101,8 @@ const Companies = () => {
           </span>
         </div>
       </div>
-      {/* Companies Table */}
+
+      {/* Table */}
       <div className="bg-white p-4 rounded shadow">
         <table className="w-full">
           <thead>
@@ -106,12 +120,35 @@ const Companies = () => {
                 <td className="p-2">{company.userId?.fullname || "N/A"}</td>
                 <td className="p-2">{company.userId?.email || "N/A"}</td>
                 <td className="p-2">
-                  <button
-                    onClick={() => handleDelete(company._id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button
+                        onClick={() => setSelectedCompanyId(company._id)}
+                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-white dark:bg-gray-900 text-black dark:text-white">
+                      <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this company? This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDelete(selectedCompanyId)}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </td>
               </tr>
             ))}

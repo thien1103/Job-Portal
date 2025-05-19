@@ -3,13 +3,25 @@ import { ADMIN_API_END_POINT } from "@/utils/constant";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const Applicants = () => {
   const [applicants, setApplicants] = useState([]);
   const [allApplicants, setAllApplicants] = useState([]);
   const [filterText, setFilterText] = useState("");
+  const [openDialog, setOpenDialog] = useState(false);
+  const [applicantToDelete, setApplicantToDelete] = useState(null);
 
-  // Fetch applicants
   useEffect(() => {
     const fetchApplicants = async () => {
       try {
@@ -34,9 +46,8 @@ const Applicants = () => {
     fetchApplicants();
   }, []);
 
-  // Handle filter across fullname, email, and role
   const handleFilterChange = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setFilterText(value);
     if (value === "") {
       setApplicants(allApplicants);
@@ -44,36 +55,42 @@ const Applicants = () => {
       setApplicants(
         allApplicants.filter(
           (applicant) =>
-            applicant.fullname.toLowerCase().includes(value) ||
-            applicant.email.toLowerCase().includes(value) ||
-            applicant.role.toLowerCase().includes(value)
+            applicant.fullname.includes(value) ||
+            applicant.email.includes(value) ||
+            applicant.role.includes(value)
         )
       );
     }
   };
 
-  const handleDelete = async (_id) => {
+  const confirmDelete = async () => {
+    if (!applicantToDelete) return;
+
     try {
-      const response = await fetch(`${ADMIN_API_END_POINT}/users/${_id}`, {
+      const response = await fetch(`${ADMIN_API_END_POINT}/users/${applicantToDelete}`, {
         credentials: "include",
         method: "DELETE",
       });
       const result = await response.json();
       if (result.success) {
         toast.success("Applicant deleted successfully!");
-        setApplicants(applicants.filter((applicant) => applicant._id !== _id));
-        setAllApplicants(allApplicants.filter((applicant) => applicant._id !== _id));
+        setApplicants(applicants.filter((a) => a._id !== applicantToDelete));
+        setAllApplicants(allApplicants.filter((a) => a._id !== applicantToDelete));
+      } else {
+        toast.error("Failed to delete applicant");
       }
     } catch (error) {
       toast.error("Error deleting applicant!");
       console.error("Error deleting applicant:", error);
+    } finally {
+      setOpenDialog(false);
+      setApplicantToDelete(null);
     }
   };
 
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Applicants Management</h2>
-      {/* Filter Row */}
       <div className="mb-4 p-4 bg-white rounded shadow flex items-center">
         <div className="relative w-1/3">
           <input
@@ -88,7 +105,7 @@ const Applicants = () => {
           </span>
         </div>
       </div>
-      {/* Applicants Table */}
+
       <div className="bg-white p-4 rounded shadow">
         <table className="w-full">
           <thead>
@@ -106,12 +123,40 @@ const Applicants = () => {
                 <td className="p-2">{applicant.email}</td>
                 <td className="p-2">{applicant.role}</td>
                 <td className="p-2">
-                  <button
-                    onClick={() => handleDelete(applicant._id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
+                  <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                    <DialogTrigger asChild>
+                      <button
+                        onClick={() => setApplicantToDelete(applicant._id)}
+                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Are you sure?</DialogTitle>
+                        <DialogDescription>
+                          This action cannot be undone. This will permanently delete the applicant.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => setApplicantToDelete(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </DialogClose>
+                        <Button
+                          onClick={confirmDelete}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </td>
               </tr>
             ))}

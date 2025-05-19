@@ -3,7 +3,14 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartLine, faUsers, faBuilding, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = ({ isOpen }) => {
+  // State để kiểm soát submenu của Users
+  const [isUsersOpen, setIsUsersOpen] = React.useState(false);
+
+  const toggleUsersMenu = () => {
+    setIsUsersOpen(!isUsersOpen);
+  };
+
   return (
     <div
       className={`h-full text-white transition-all duration-300 ease-in-out ${isOpen ? "p-4" : ""}`}
@@ -27,22 +34,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <li className="mb-2">
                 <div
                   className="flex items-center p-2 text-white hover:text-black rounded-lg cursor-pointer transition-colors duration-200 text-xl"
-                  onClick={toggleSidebar}
+                  onClick={toggleUsersMenu} // Chỉ mở/tắt submenu
                 >
                   <FontAwesomeIcon icon={faUsers} className="mr-3" />
                   <span className="flex-1">Users</span>
                   <FontAwesomeIcon
-                    icon={isOpen ? faChevronUp : faChevronDown}
+                    icon={isUsersOpen ? faChevronUp : faChevronDown}
                     className="text-sm"
                   />
                 </div>
-                {isOpen && (
+                {isUsersOpen && (
                   <ul className="ml-6 mt-2 space-y-1 slide-down">
                     <li>
                       <Link
                         to="/admin/users/applicants"
                         className="flex items-center p-2 text-white hover:text-black rounded-lg transition-colors duration-200"
-                        onClick={toggleSidebar}
                       >
                         + Applicants
                       </Link>
@@ -51,7 +57,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                       <Link
                         to="/admin/users/recruiters"
                         className="flex items-center p-2 text-white hover:text-black rounded-lg transition-colors duration-200"
-                        onClick={toggleSidebar}
                       >
                         + Recruiters
                       </Link>
@@ -64,7 +69,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <Link
                   to="/admin/companies"
                   className="flex items-center p-2 text-white hover:text-black rounded-lg transition-colors duration-200 text-xl"
-                  onClick={toggleSidebar}
                 >
                   <FontAwesomeIcon icon={faBuilding} className="mr-3" />
                   Companies
@@ -75,7 +79,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <Link
                   to="/admin/statistics"
                   className="flex items-center p-2 text-white hover:text-black rounded-lg transition-colors duration-200 text-xl"
-                  onClick={toggleSidebar}
                 >
                   <FontAwesomeIcon icon={faChartLine} className="mr-3" />
                   Statistics

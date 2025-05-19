@@ -30,10 +30,29 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
     const submitHandler = async (e) => {
         e.preventDefault();
 
+        // Trim inputs to check for empty values
+        const trimmedFullname = input.fullname.trim();
+        const trimmedBio = input.bio.trim();
+        const trimmedSkills = input.skills.trim();
+
+        // Validation
+        if (!trimmedFullname) {
+            toast.error("Full Name is required.");
+            return;
+        }
+        if (!trimmedBio) {
+            toast.error("Bio is required.");
+            return;
+        }
+        if (!trimmedSkills) {
+            toast.error("Skills are required.");
+            return;
+        }
+
         const dataToSubmit = {
-            fuller: input.fullname,
-            bio: input.bio,
-            skills: input.skills.split(",").map(skill => skill.trim()),
+            fuller: trimmedFullname,
+            bio: trimmedBio,
+            skills: trimmedSkills.split(",").map(skill => skill.trim()),
         };
 
         try {
@@ -70,13 +89,13 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
                         <div className='grid gap-4 py-4'>
                             {/* Name */}
                             <div className='grid grid-cols-4 items-center gap-4'>
-                                <Label htmlFor="fullname" className="text-right w-[20%]">Name</Label>
+                                <Label htmlFor="fullname" className="text-right w-[45%]">Full Name</Label>
                                 <Input id="fullname" name="fullname" type="text" value={input.fullname} onChange={changeEventHandler} className="col-span-4" />
                             </div>
 
                             {/* Bio */}
                             <div className='grid grid-cols-4 items-start gap-4'>
-                                <Label htmlFor="bio" className="text-right w-[20%] pt-2">Bio</Label>
+                                <Label htmlFor="bio" className="text-right w-[15%] pt-2">Bio</Label>
                                 <Textarea
                                     id="bio"
                                     name="bio"

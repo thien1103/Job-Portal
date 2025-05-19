@@ -181,7 +181,7 @@ const CareerHandbook = () => {
   );
 
   return (
-    <div className="bg-gradient-to-b from-white to-[#f4faf9] max-h-[440vh]">
+    <div className="bg-gradient-to-b from-white to-[#f4faf9] h-[280vh]">
       <Navbar />
 
       <div className="relative py-12 mb-10">

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/Textarea"; // Import the new Textarea
+import { Textarea } from "@/components/ui/Textarea";
 
 const JobDescription = () => {
   const { singleJob, savedJobIds } = useSelector((store) => store.job);
@@ -43,6 +43,7 @@ const JobDescription = () => {
       if (!user || !jobId) return;
       setIsChecking(true);
       try {
+        0x0a0a0a;
         const res = await axios.post(
           `${APPLICATION_API_END_POINT}/check/${jobId}`,
           {},
@@ -165,7 +166,7 @@ const JobDescription = () => {
       const formData = new FormData();
       formData.append("file", cvFile);
       if (coverLetter.trim()) {
-        formData.append("coverLetter", coverLetter); // Only append if not empty
+        formData.append("coverLetter", coverLetter);
       }
 
       console.log("Sending request to:", `${APPLICATION_API_END_POINT}/apply/${jobId}`);
@@ -203,6 +204,7 @@ const JobDescription = () => {
       try {
         const res = await axios.get(`${JOB_API_END_POINT}/${jobId}`, { withCredentials: true });
         if (res.data.success) {
+          console.log("Single job data:", res.data.job);
           dispatch(setSingleJob(res.data.job));
         }
       } catch (error) {
@@ -219,6 +221,7 @@ const JobDescription = () => {
         try {
           const res = await axios.get(`${COMPANY_API_END_POINT}/${singleJob.company}`, { withCredentials: true });
           if (res.data.success) {
+            console.log("Company data:", res.data.company);
             setCompanyData(res.data.company);
           }
         } catch (error) {
@@ -244,7 +247,7 @@ const JobDescription = () => {
   }
 
   return (
-    <div className="">
+    <div className="h-[220vh]">
       <Navbar />
       <div className="max-w-7xl mx-auto my-10 px-6">
         <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
@@ -323,7 +326,7 @@ const JobDescription = () => {
                       onChange={handleFileChange}
                     />
                   </>
-                )}
+               )}
               </div>
 
               <div className="grid gap-2">
@@ -372,6 +375,36 @@ const JobDescription = () => {
                 <div>
                   <h2 className="font-bold">Location:</h2>
                   <p className="pl-4 text-gray-800">{singleJob?.location || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
+              <h1 className="font-bold text-xl border-b-2 border-b-gray-300 pb-2 mb-4">Requirements & Benefits</h1>
+              <div className="space-y-6">
+                <div>
+                  <h2 className="font-bold text-lg mb-2">Requirements</h2>
+                  <ul className="pl-4 list-disc text-gray-800">
+                    {Array.isArray(singleJob?.requirements) && singleJob.requirements.length > 0 ? (
+                      singleJob.requirements.map((req, index) => (
+                        <li key={index} className="mb-1">{req}</li>
+                      ))
+                    ) : (
+                      <li className="text-gray-600">No requirements listed</li>
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg mb-2">Benefits</h2>
+                  <ul className="pl-4 list-disc text-gray-800">
+                    {Array.isArray(singleJob?.benefits) && singleJob.benefits.length > 0 ? (
+                      singleJob.benefits.map((benefit, index) => (
+                        <li key={index} className="mb-1">{benefit}</li>
+                      ))
+                    ) : (
+                      <li className="text-gray-600">No benefits listed</li>
+                    )}
+                  </ul>
                 </div>
               </div>
             </div>

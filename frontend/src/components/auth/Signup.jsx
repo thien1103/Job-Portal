@@ -140,14 +140,17 @@ const Signup = () => {
                 <Label htmlFor="r2">Recruiter</Label>
               </div>
             </RadioGroup>
-            <div className="flex items-center gap-2">
-              <Label>Profile</Label>
+            <div className="flex items-center gap-1">
+            <div className="flex flex-row w-[110px]">
+              <Label>Profile Photo</Label>
+              </div>
               <Input
                 accept="image/*"
                 type="file"
                 onChange={changeFileHandler}
                 className="cursor-pointer"
               />
+              
             </div>
           </div>
           {loading ? (

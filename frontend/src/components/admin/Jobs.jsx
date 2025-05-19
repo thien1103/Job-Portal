@@ -36,7 +36,7 @@ const Jobs = () => {
 
   // Handle filter on title
   const handleFilterChange = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setFilterText(value);
     if (value === "") {
       setJobs(allJobs);

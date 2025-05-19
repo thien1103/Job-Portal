@@ -48,8 +48,6 @@ const PostJob = () => {
         ? Number(rawValue).toLocaleString("en-US")
         : "";
       setDisplaySalary(formattedValue);
-    } else if (name === "customLocation") {
-      setInput({ ...input, customLocation: value });
     } else {
       setInput({ ...input, [name]: value });
     }
@@ -75,12 +73,7 @@ const PostJob = () => {
     const formattedInput = {
       ...input,
       location: finalLocation || "",
-      description: input.description
-        ? input.description
-            .split("\n")
-            .map((line) => line.trim())
-            .filter((line) => line)
-        : [],
+      description: input.description,
       requirements: input.requirements
         ? input.requirements
             .split("\n")
@@ -89,7 +82,7 @@ const PostJob = () => {
         : [],
       benefits: input.benefits
         ? input.benefits
-            .split(",")
+            .split("\n")
             .map((item) => item.trim())
             .filter((item) => item)
         : [],
@@ -123,10 +116,10 @@ const PostJob = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex items-center justify-center w-screen my-5">
+      <div className=" flex items-center justify-center w-screen my-5">
         <form
           onSubmit={submitHandler}
-          className="p-8 max-w-4xl border border-gray-200 shadow-lg rounded-md"
+          className="bg-white p-8 max-w-4xl border border-gray-200 shadow-lg rounded-md"
         >
           <div
             className="grid grid-cols-2 gap-2"
@@ -147,24 +140,24 @@ const PostJob = () => {
               </div>
               <div>
                 <Label>Description (Separate lines with Enter)</Label>
-                <Input
-                  type="text"
+                <textarea
                   name="description"
                   value={input.description}
                   onChange={changeEventHandler}
-                  className="focus-visible:ring-offset-0 focus-visible:ring-0 my-1"
+                  className="w-full p-2 my-1 border rounded-md focus:outline-none focus:ring-0 resize-none"
                   placeholder="Enter each description point on a new line"
+                  rows={4}
                 />
               </div>
               <div>
                 <Label>Requirements (Separate lines with Enter)</Label>
-                <Input
-                  type="text"
+                <textarea
                   name="requirements"
                   value={input.requirements}
                   onChange={changeEventHandler}
-                  className="focus-visible:ring-offset-0 focus-visible:ring-0 my-1"
+                  className="w-full p-2 my-1 border rounded-md focus:outline-none focus:ring-0 resize-none"
                   placeholder="Enter each requirement on a new line"
+                  rows={4}
                 />
               </div>
               <div>
@@ -292,14 +285,14 @@ const PostJob = () => {
                 />
               </div>
               <div>
-                <Label>Benefits (Separate with commas)</Label>
-                <Input
-                  type="text"
+                <Label>Benefits (Separate lines with Enter)</Label>
+                <textarea
                   name="benefits"
                   value={input.benefits}
                   onChange={changeEventHandler}
-                  className="focus-visible:ring-offset-0 focus-visible:ring-0 my-1"
-                  placeholder="Parking Free, Free Laptop"
+                  className="w-full p-2 my-1 border rounded-md focus:outline-none focus:ring-0 resize-none"
+                  placeholder="Enter each benefit on a new line"
+                  rows={4}
                 />
               </div>
             </div>
