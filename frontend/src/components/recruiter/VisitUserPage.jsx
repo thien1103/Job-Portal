@@ -9,7 +9,7 @@ import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { USER_API_END_POINT, JOB_API_END_POINT } from "@/utils/constant";
-import { format } from "date-fns"; // Import date-fns for formatting dates
+import { format } from "date-fns";
 
 const VisitUserPage = () => {
   const { userId } = useParams();
@@ -40,7 +40,7 @@ const VisitUserPage = () => {
 
   const fetchProfile = async (retry = 0) => {
     const maxRetries = 3;
-    const retryDelay = 2 ** retry * 1000; // Exponential backoff: 1s, 2s, 4s
+    const retryDelay = 2 ** retry * 1000;
 
     try {
       setLoadingProfile(true);
@@ -50,7 +50,7 @@ const VisitUserPage = () => {
 
       const response = await axios.get(`${JOB_API_END_POINT}/applications/${userId}`, {
         withCredentials: true,
-        timeout: 5000, // 5 seconds timeout
+        timeout: 5000,
       });
 
       if (response.data && response.data.success) {
@@ -75,7 +75,7 @@ const VisitUserPage = () => {
 
   const fetchCV = async (retry = 0) => {
     const maxRetries = 3;
-    const retryDelay = 2 ** retry * 1000; // Exponential backoff: 1s, 2s, 4s
+    const retryDelay = 2 ** retry * 1000;
 
     try {
       setLoadingCV(true);
@@ -85,7 +85,7 @@ const VisitUserPage = () => {
 
       const response = await axios.get(`${USER_API_END_POINT}/applicant/${userId}/primary-cv`, {
         withCredentials: true,
-        timeout: 5000, // 5 seconds timeout
+        timeout: 5000,
       });
 
       if (response.data && response.data.success) {
@@ -123,7 +123,7 @@ const VisitUserPage = () => {
     }
 
     return () => {
-      isMounted = false; // Cleanup on unmount
+      isMounted = false;
     };
   }, [userId]);
 
@@ -144,8 +144,8 @@ const VisitUserPage = () => {
             onClick={() => {
               setErrorProfile(null);
               setProfile(null);
-              clearCookies(); // Clear cookies to reset session
-              fetchProfile(); // Retry profile fetch
+              clearCookies();
+              fetchProfile();
             }}
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
           >
@@ -208,6 +208,9 @@ const VisitUserPage = () => {
     endYear: edu.endDate ? new Date(edu.endDate).getFullYear() : "Present",
   })) || [];
 
+  // Split bio by line breaks
+  const bioLines = bio ? bio.split('\n').filter(line => line.trim()) : [];
+
   return (
     <div>
       <Navbar />
@@ -223,7 +226,15 @@ const VisitUserPage = () => {
             </Avatar>
             <div>
               <h1 className="font-medium text-xl">{fullname}</h1>
-              <p>{bio || "No bio available"}</p>
+              {bioLines.length > 0 ? (
+                <div className="text-gray-500">
+                  {bioLines.map((line, index) => (
+                    <p key={index} className="mb-1">{line}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No bio available</p>
+              )}
             </div>
           </div>
         </div>
@@ -302,8 +313,8 @@ const VisitUserPage = () => {
                 <button
                   onClick={() => {
                     setErrorCV(null);
-                    clearCookies(); // Clear cookies to reset session
-                    fetchCV(); // Retry CV fetch
+                    clearCookies();
+                    fetchCV();
                   }}
                   className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
                 >
@@ -346,39 +357,6 @@ const VisitUserPage = () => {
                   </div>
 
                   <div className="mt-4 flex justify-end items-center gap-2">
-                    {/* <a
-                      className="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1 rounded cursor-pointer"
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        try {
-                          const response = await fetch(resumeUrl.cv.resume);
-                          const blob = await response.blob();
-                          const handle = await window.showSaveFilePicker({
-                            suggestedName: resumeUrl.cv.resumeOriginalName || "resume.pdf",
-                            types: [
-                              {
-                                description: "PDF Files",
-                                accept: { "application/pdf": [".pdf"] },
-                              },
-                            ],
-                          });
-                          const writable = await handle.createWritable();
-                          await writable.write(blob);
-                          await writable.close();
-                        } catch (err) {
-                          if (err.name !== "AbortError") {
-                            console.error("Error saving file:", err);
-                          }
-                        }
-                      }}
-                    >
-                      <img
-                        src="https://cdn-icons-png.flaticon.com/128/10741/10741247.png"
-                        alt="Download CV"
-                        className="w-5 h-5 inline-block mr-1"
-                      />
-                      Download
-                    </a> */}
                     <a
                       href={resumeUrl.cv.resume}
                       target="_blank"

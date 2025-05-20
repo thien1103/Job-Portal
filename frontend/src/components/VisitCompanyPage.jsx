@@ -3,12 +3,12 @@ import Navbar from "./shared/Navbar";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Contact, Mail, Globe, MapPin, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
-import { useParams } from "react-router-dom"; // Added missing import
+import { useParams } from "react-router-dom";
 import axios from "axios";
-import { COMPANY_API_END_POINT } from "../utils/constant"; // Assuming this constant exists
+import { COMPANY_API_END_POINT } from "../utils/constant";
 
 const VisitCompanyPage = () => {
-  const { companyId } = useParams(); // Now properly defined
+  const { companyId } = useParams();
   const [companyData, setCompanyData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,6 +49,18 @@ const VisitCompanyPage = () => {
 
   const { name, description, logo, contactInfo, location, website, createdAt } = companyData;
 
+  // Handle description: use array elements directly, no splitting by commas or newlines
+  let descriptionLines = [];
+  if (Array.isArray(description)) {
+    descriptionLines = description
+      .filter(item => typeof item === 'string' && item.trim())
+      .map(item => item.trim());
+  } else if (typeof description === 'string' && description.trim()) {
+    descriptionLines = [description.trim()];
+  } else {
+    console.warn(`Invalid description format for company ${companyId}:`, description);
+  }
+
   return (
     <div>
       <Navbar />
@@ -71,11 +83,11 @@ const VisitCompanyPage = () => {
           <h1 className="font-bold text-lg mb-2">Contact Information</h1>
           <div className="flex items-center gap-3 my-2">
             <Mail />
-            <span>{contactInfo.email}</span>
+            <span>{contactInfo.email || "Not provided"}</span>
           </div>
           <div className="flex items-center gap-3 my-2">
             <Contact />
-            <span>{contactInfo.phone}</span>
+            <span>{contactInfo.phone || "Not provided"}</span>
           </div>
           <div className="flex items-center gap-3 my-2">
             <Globe />
@@ -92,8 +104,16 @@ const VisitCompanyPage = () => {
 
         {/* Description */}
         <div className="bg-white rounded-2xl my-5 p-4">
-          <h1 className="font-bold text-lg">Description</h1>
-          <p className="text-gray-700 mt-2">{description}</p>
+          <h1 className="font-bold text-lg mb-2">Description</h1>
+          {descriptionLines.length > 0 ? (
+            <ul className="pl-4 list-disc text-gray-800">
+              {descriptionLines.map((line, index) => (
+                <li key={index} className="mb-1">{line}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-600 mt-2">No description available</p>
+          )}
         </div>
 
         {/* Additional Details */}
@@ -112,8 +132,6 @@ const VisitCompanyPage = () => {
                 year: "numeric",
               })}
             </span>
-          </div>
-          <div className="flex items-center gap-3 my-2">
           </div>
         </div>
       </div>

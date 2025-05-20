@@ -123,7 +123,7 @@ const CompanyCreate = () => {
         dispatch(setSingleCompany(res.data.company));
         toast.success(res.data.message);
         const companyId = res?.data?.company?._id;
-        navigate(`/recruiter/companies/${companyId}`);
+        navigate(`/recruiter/companies`);
       }
     } catch (error) {
       console.error("Request failed:", error);
