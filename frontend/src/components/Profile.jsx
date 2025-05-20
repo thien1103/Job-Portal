@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "./shared/Navbar";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
@@ -21,10 +21,9 @@ import educationLogo from "../assets/education_profile_icon.png";
 import { toast } from "sonner";
 import { USER_API_END_POINT } from "@/utils/constant";
 
-// Bio Dialog Component
+// BioDialog and ParseCVDialog unchanged (omitted for brevity)
 const BioDialog = ({ bio, open, setOpen }) => {
   const formattedBio = bio ? bio.split("\n").filter(line => line.trim() !== "") : ["No bio available"];
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
@@ -46,7 +45,6 @@ const BioDialog = ({ bio, open, setOpen }) => {
   );
 };
 
-// ParseCVDialog Component
 const ParseCVDialog = ({ open, setOpen }) => {
   const [file, setFile] = useState(null);
   const [userProfile, setUserProfile] = useState({ skills: '' });
@@ -71,12 +69,10 @@ const ParseCVDialog = ({ open, setOpen }) => {
       });
       if (res.data.success) {
         const { user } = res.data;
-        // Validate that the parsed data contains meaningful content
         if (!user?.profile?.skills?.length && !user?.profile?.experience?.length && !user?.profile?.education?.length) {
           toast.error('Please provide correct CV file.');
           return;
         }
-        console.log("CV Parse Response:", res.data); // Log the response data
         setUserProfile({
           skills: user.profile.skills ? user.profile.skills.join(', ') : '',
         });
@@ -100,7 +96,6 @@ const ParseCVDialog = ({ open, setOpen }) => {
             }))
           : [{ university: '', major: '', startYear: '', endYear: 'Present' }];
         setEducations(parsedEducations);
-                console.log("CV Parse Response:", res.data); // Log the response data
         toast.success('CV parsed successfully!');
       }
     } catch (error) {
@@ -111,17 +106,14 @@ const ParseCVDialog = ({ open, setOpen }) => {
 
   const confirmUpdate = async () => {
     try {
-      // Update user profile
       await axios.post(`${USER_API_END_POINT}/profile/update`, {
         skills: userProfile.skills.split(',').map(s => s.trim()),
       }, { withCredentials: true });
 
-      // Delete existing experiences
       const currentExperiences = await axios.get(`${USER_API_END_POINT}/profile/experience`, { withCredentials: true });
       for (const exp of currentExperiences.data.experience) {
         await axios.delete(`${USER_API_END_POINT}/profile/experience/${exp._id}`, { withCredentials: true });
       }
-      // Add new experiences
       for (const exp of experiences) {
         const [month, year] = exp.startDate.split("/");
         const startDate = year && month ? `${year}-${month}-01` : null;
@@ -137,12 +129,10 @@ const ParseCVDialog = ({ open, setOpen }) => {
         }
       }
 
-      // Delete existing educations
       const currentEducations = await axios.get(`${USER_API_END_POINT}/profile/education`, { withCredentials: true });
       for (const edu of currentEducations.data.education) {
         await axios.delete(`${USER_API_END_POINT}/profile/education/${edu._id}`, { withCredentials: true });
       }
-      // Add new educations
       for (const edu of educations) {
         const startDate = edu.startYear ? new Date(edu.startYear).toISOString().split("T")[0] : null;
         const endDate = edu.endYear === "Present" ? "" : edu.endYear ? new Date(edu.endYear).toISOString().split("T")[0] : null;
@@ -314,7 +304,6 @@ const ParseCVDialog = ({ open, setOpen }) => {
   );
 };
 
-// Rest of Profile.jsx remains unchanged
 const Profile = () => {
   useGetAppliedJobs();
   const [open, setOpen] = useState(false);
@@ -569,9 +558,56 @@ const Profile = () => {
     setEducations((prev) => prev.filter((_, i) => i !== index));
     if (editingEducationIndex === index) setEditingEducationIndex(null);
   };
+  
+  const containerRef = useRef(null);
+const isDownRef = useRef(false);
+const startXRef = useRef(0);
+const scrollLeftRef = useRef(0);
+
+useEffect(() => {
+  const container = containerRef.current;
+  if (!container) return;
+
+  const handleMouseDown = (e) => {
+    isDownRef.current = true;
+    container.classList.add("cursor-grabbing");
+    startXRef.current = e.pageX - container.offsetLeft;
+    scrollLeftRef.current = container.scrollLeft;
+  };
+
+  const handleMouseLeave = () => {
+    isDownRef.current = false;
+    container.classList.remove("cursor-grabbing");
+  };
+
+  const handleMouseUp = () => {
+    isDownRef.current = false;
+    container.classList.remove("cursor-grabbing");
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDownRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startXRef.current) * 1.5; // Adjust scroll speed here
+    container.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  container.addEventListener("mousedown", handleMouseDown);
+  container.addEventListener("mouseleave", handleMouseLeave);
+  container.addEventListener("mouseup", handleMouseUp);
+  container.addEventListener("mousemove", handleMouseMove);
+
+  return () => {
+    container.removeEventListener("mousedown", handleMouseDown);
+    container.removeEventListener("mouseleave", handleMouseLeave);
+    container.removeEventListener("mouseup", handleMouseUp);
+    container.removeEventListener("mousemove", handleMouseMove);
+  };
+}, []);
 
   return (
-    <div className="h-[200vh]">
+    <div className="h-[160vh]">
       <Navbar />
       <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
         <div className="flex justify-between">
@@ -620,21 +656,26 @@ const Profile = () => {
         </div>
 
         <div className="my-5">
-          <h1>Skills</h1>
-          <div className="flex flex-wrap gap-2 p-2 min-h-[40px]">
-            {user?.profile?.skills?.length ? (
-              user.profile.skills.map((item, index) => (
-                <Badge key={index} className="px-3 py-1 text-sm">
-                  {item}
-                </Badge>
-              ))
-            ) : (
-              <span>NA</span>
-            )}
-          </div>
+          <h1 className="font-bold text-xl">Skills:</h1>
+          <div
+  ref={containerRef}
+  className="flex overflow-x-auto gap-2 p-2 min-h-[40px] whitespace-nowrap hide-scrollbar cursor-grab"
+>
+  {user?.profile?.skills?.length ? (
+    user.profile.skills.map((item, index) => (
+      <Badge key={index} className="px-3 py-1 text-sm flex-shrink-0 non-selectable">
+        {item}
+      </Badge>
+    ))
+  ) : (
+    <span>NA</span>
+  )}
+</div>
+
         </div>
       </div>
 
+      {/* Rest of the component unchanged */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl my-5 p-4">
         <h1 className="font-bold text-lg">Experience</h1>
         {experiences.map((exp, index) => (
@@ -861,7 +902,7 @@ const Profile = () => {
                   }
                 }}
               >
-                {editingExperienceIndex === index ? <Check /> : <Pen />}
+                {editingEducationIndex === index ? <Check /> : <Pen />}
               </Button>
               {editingEducationIndex === index && (
                 <Button variant="destructive" onClick={() => removeEducation(index)}>
@@ -893,6 +934,21 @@ const Profile = () => {
       <UpdateProfileDialog open={open} setOpen={setOpen} />
       <BioDialog bio={user?.profile?.bio} open={bioDialogOpen} setOpen={setBioDialogOpen} />
       <ParseCVDialog open={parseCVDialogOpen} setOpen={setParseCVDialogOpen} />
+      <style>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+        .non-selectable {
+          user-select: none; /* Standard */
+          -webkit-user-select: none; /* Safari */
+          -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* IE/Edge */
+        }
+      `}</style>
     </div>
   );
 };
