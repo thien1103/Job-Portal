@@ -325,6 +325,12 @@ export const deleteJob = async (req, res, next) => {
             console.log(`No applications to delete for job ${jobId}`);
         }
 
+        const updateResult = await User.updateMany(
+            { savedJobs: jobId }, 
+            { $pull: { savedJobs: jobId } } 
+        );
+        console.log(`Removed job ${jobId} from savedJobs of ${updateResult.modifiedCount} users`);
+
         await Job.findByIdAndDelete(jobId);
 
         return res.status(200).json({
