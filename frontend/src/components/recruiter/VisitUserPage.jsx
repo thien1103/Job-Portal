@@ -46,27 +46,38 @@ const VisitUserPage = () => {
       setLoadingProfile(true);
       setErrorProfile(null);
       console.log(`Fetching profile for user ID: ${userId} (Retry ${retry})`);
-      console.log(`Profile endpoint: ${JOB_API_END_POINT}/applications/${userId}`);
+      console.log(
+        `Profile endpoint: ${JOB_API_END_POINT}/applications/${userId}`
+      );
 
-      const response = await axios.get(`${JOB_API_END_POINT}/applications/${userId}`, {
-        withCredentials: true,
-        timeout: 5000,
-      });
+      const response = await axios.get(
+        `${JOB_API_END_POINT}/applications/${userId}`,
+        {
+          withCredentials: true,
+          timeout: 5000,
+        }
+      );
 
       if (response.data && response.data.success) {
         setProfile(response.data.user || null);
-        console.log('Profile data set:', response.data.user);
+        console.log("Profile data set:", response.data.user);
       } else {
-        console.log('Profile fetch failed: Invalid response format');
-        setErrorProfile('Failed to fetch profile: Invalid response');
+        console.log("Profile fetch failed: Invalid response format");
+        setErrorProfile("Failed to fetch profile: Invalid response");
       }
     } catch (error) {
-      console.error('Error fetching profile:', error.message || error);
-      if (retry < maxRetries && (error.response?.status === 502 || error.code === 'ECONNABORTED')) {
+      console.error("Error fetching profile:", error.message || error);
+      if (
+        retry < maxRetries &&
+        (error.response?.status === 502 || error.code === "ECONNABORTED")
+      ) {
         console.log(`Retrying profile fetch in ${retryDelay / 1000}s...`);
         setTimeout(() => fetchProfile(retry + 1), retryDelay);
       } else {
-        setErrorProfile(error.response?.data?.message || 'Failed to fetch profile: Server error');
+        setErrorProfile(
+          error.response?.data?.message ||
+            "Failed to fetch profile: Server error"
+        );
       }
     } finally {
       setLoadingProfile(false);
@@ -81,27 +92,39 @@ const VisitUserPage = () => {
       setLoadingCV(true);
       setErrorCV(null);
       console.log(`Fetching CV for user ID: ${userId} (Retry ${retry})`);
-      console.log(`CV endpoint: ${USER_API_END_POINT}/applicant/${userId}/primary-cv`);
+      console.log(
+        `CV endpoint: ${USER_API_END_POINT}/applicant/${userId}/primary-cv`
+      );
 
-      const response = await axios.get(`${USER_API_END_POINT}/applicant/${userId}/primary-cv`, {
-        withCredentials: true,
-        timeout: 5000,
-      });
+      const response = await axios.get(
+        `${USER_API_END_POINT}/applicant/${userId}/primary-cv`,
+        {
+          withCredentials: true,
+          timeout: 5000,
+        }
+      );
 
       if (response.data && response.data.success) {
         setResumeUrl(response.data);
-        console.log('Resume URL set:', response.data);
+        console.log("Resume URL set:", response.data);
       } else {
-        console.log('CV fetch failed: Invalid response format');
-        setErrorCV('Failed to fetch CV: Invalid response');
+        console.log("CV fetch failed: Invalid response format");
+        setErrorCV("Failed to fetch CV: Invalid response");
       }
     } catch (error) {
-      console.error('Error fetching CV:', error.message || error);
-      if (retry < maxRetries && (error.response?.status === 502 || error.code === 'ECONNABORTED')) {
+      console.error("Error fetching CV:", error.message || error);
+      if (
+        retry < maxRetries &&
+        (error.response?.status === 502 || error.code === "ECONNABORTED")
+      ) {
         console.log(`Retrying CV fetch in ${retryDelay / 1000}s...`);
         setTimeout(() => fetchCV(retry + 1), retryDelay);
+      } else if (error.response?.status === 404) {
+        setErrorCV("No CV uploaded");
       } else {
-        setErrorCV(error.response?.data?.message || 'Failed to fetch CV: Server error');
+        setErrorCV(
+          error.response?.data?.message || "Failed to fetch CV: Server error"
+        );
       }
     } finally {
       setLoadingCV(false);
@@ -175,7 +198,13 @@ const VisitUserPage = () => {
     fullname,
     email,
     phoneNumber,
-    profile: { bio, skills, experience: experiences, education: educations, isPublic } = {},
+    profile: {
+      bio,
+      skills,
+      experience: experiences,
+      education: educations,
+      isPublic,
+    } = {},
   } = profile;
 
   if (!isPublic) {
@@ -193,28 +222,34 @@ const VisitUserPage = () => {
     );
   }
 
-  const formattedExperiences = experiences?.map(exp => ({
-    ...exp,
-    position: exp.jobTitle,
-    startDate: exp.startDate ? format(new Date(exp.startDate), "MMM yyyy") : "",
-    endDate: exp.endDate ? format(new Date(exp.endDate), "MMM yyyy") : "Present",
-  })) || [];
+  const formattedExperiences =
+    experiences?.map((exp) => ({
+      ...exp,
+      position: exp.jobTitle,
+      startDate: exp.startDate
+        ? format(new Date(exp.startDate), "MMM yyyy")
+        : "",
+      endDate: exp.endDate
+        ? format(new Date(exp.endDate), "MMM yyyy")
+        : "Present",
+    })) || [];
 
-  const formattedEducations = educations?.map(edu => ({
-    ...edu,
-    university: edu.institution,
-    major: edu.degree,
-    startYear: edu.startDate ? new Date(edu.startDate).getFullYear() : "",
-    endYear: edu.endDate ? new Date(edu.endDate).getFullYear() : "Present",
-  })) || [];
+  const formattedEducations =
+    educations?.map((edu) => ({
+      ...edu,
+      university: edu.institution,
+      major: edu.degree,
+      startYear: edu.startDate ? new Date(edu.startDate).getFullYear() : "",
+      endYear: edu.endDate ? new Date(edu.endDate).getFullYear() : "Present",
+    })) || [];
 
   // Split bio by line breaks
-  const bioLines = bio ? bio.split('\n').filter(line => line.trim()) : [];
+  const bioLines = bio ? bio.split("\n").filter((line) => line.trim()) : [];
 
   return (
-    <div>
+    <div className=" h-[180vh]">
       <Navbar />
-      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8">
+      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl my-5 p-8 ">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -229,7 +264,9 @@ const VisitUserPage = () => {
               {bioLines.length > 0 ? (
                 <div className="text-gray-500">
                   {bioLines.map((line, index) => (
-                    <p key={index} className="mb-1">{line}</p>
+                    <p key={index} className="mb-1">
+                      {line}
+                    </p>
                   ))}
                 </div>
               ) : (
@@ -253,7 +290,7 @@ const VisitUserPage = () => {
 
         {/* Skills */}
         <div className="my-5">
-          <h1>Skills</h1>
+          <h1 className="font-bold text-lg">Skills:</h1>
           <div className="flex items-center gap-1 flex-wrap">
             {skills?.length ? (
               skills.map((item, index) => <Badge key={index}>{item}</Badge>)
@@ -307,9 +344,20 @@ const VisitUserPage = () => {
         <div className="bg-white rounded-lg p-6 shadow mt-5">
           <h2 className="text-2xl font-bold mb-4">CV</h2>
           <div className="text-center mt-4">
-            {errorCV ? (
+            {errorCV === "No CV uploaded" ? (
               <div>
-                <span className="text-gray-500">Error fetching CV: {errorCV}</span>
+                <span className="text-gray-500">No CV uploaded.</span>
+                <img
+                  src="https://cdn-icons-png.flaticon.com/128/6818/6818206.png"
+                  alt="No CV"
+                  className="mt-4 mx-auto w-32 h-32"
+                />
+              </div>
+            ) : errorCV ? (
+              <div>
+                <span className="text-gray-500">
+                  Error fetching CV: {errorCV}
+                </span>
                 <button
                   onClick={() => {
                     setErrorCV(null);

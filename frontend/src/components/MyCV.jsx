@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import Navbar from "./shared/Navbar";
 import { motion } from "framer-motion";
-import { Switch } from "../components/ui/Switch";
+import * as Switch from "@radix-ui/react-switch";
 import * as Dialog from "@radix-ui/react-dialog";
 import { USER_API_END_POINT } from "../utils/constant";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,6 +20,21 @@ const MyCV = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isProfilePublic, setIsProfilePublic] = useState(false); // New state for profile public status
   const [hoveredCV, setHoveredCV] = useState(null); // State to track hovered CV
+
+
+  const fetchProfile = async () => {
+    try {
+      const response = await axios.get(`${USER_API_END_POINT}/profile`, {
+        withCredentials: true,
+      });
+      console.log("user data:", response.data);
+      // Cập nhật state dựa trên giá trị isPublic từ API
+      setIsProfilePublic(response.data.user?.profile?.isPublic || false);
+    } catch (error) {
+      toast.error("Không thể lấy trạng thái profile");
+      console.error(error);
+    }
+  };
 
   const fetchCVs = async () => {
     try {
@@ -133,7 +148,7 @@ const MyCV = () => {
     return cv ? cv.isPrimary : false;
   };
 
-  // New handler to set profile public/private
+   // Sửa hàm handleSetProfilePublic để đồng bộ với server
   const handleSetProfilePublic = async () => {
     try {
       const response = await axios.patch(
@@ -141,10 +156,11 @@ const MyCV = () => {
         {},
         { withCredentials: true }
       );
+      // Fetch lại profile để cập nhật state chính xác
+      await fetchProfile();
       toast.success(response.data.message);
-      setIsProfilePublic(!isProfilePublic); // Toggle the state
     } catch (error) {
-      toast.error("Update profile status failed.");
+      toast.error("Error updating profile visibility.");
       console.error(error);
     }
   };
@@ -152,10 +168,7 @@ const MyCV = () => {
   useEffect(() => {
     console.log("Fetching CVs...");
     fetchCVs();
-    // Note: Add a fetch for initial profile public status if API provides it
-    // e.g., axios.get(`${USER_API_END_POINT}/profile`, { withCredentials: true })
-    // .then(response => setIsProfilePublic(response.data.isPublic))
-    // .catch(error => console.error(error));
+    fetchProfile(); // Thêm dòng này để chạy khi component mount
   }, []);
 
   return (
@@ -425,17 +438,20 @@ const MyCV = () => {
 
         {/* Right section */}
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
-          <h3 className="font-bold text-gray-800 mt-4 mb-2">
-            Profile Status
-          </h3>
+          <h3 className="font-bold text-gray-800 mt-4 mb-2">Profile Status</h3>
           <div className="flex items-center justify-between">
             <span className="text-sm">
-              {isProfilePublic ? "Private" : "Public"}
+              {isProfilePublic ? "Public" : "Private"}
             </span>
-            <Switch
-              checked={!isProfilePublic}
+            <Switch.Root
+              checked={isProfilePublic}
               onCheckedChange={handleSetProfilePublic}
-            />
+              className="w-11 h-6 bg-gray-200 rounded-full relative data-[state=checked]:bg-green-600"
+            >
+              <Switch.Thumb
+                className="block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 data-[state=checked]:translate-x-5"
+              />
+            </Switch.Root>
           </div>
           <p className="text-xs text-gray-500 mt-2">
             If you set your profile status to public, everyone will be able to see your profile.
