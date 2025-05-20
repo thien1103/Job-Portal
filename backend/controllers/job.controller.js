@@ -325,9 +325,12 @@ export const deleteJob = async (req, res, next) => {
             console.log(`No applications to delete for job ${jobId}`);
         }
 
+        const allDeletedApplications = await Application.deleteMany({ job: jobId });
+        console.log(`Deleted ${allDeletedApplications.deletedCount} additional applications by job reference for job ${jobId}`);
+
         const updateResult = await User.updateMany(
-            { savedJobs: jobId }, 
-            { $pull: { savedJobs: jobId } } 
+            { savedJobs: jobId },
+            { $pull: { savedJobs: jobId } }
         );
         console.log(`Removed job ${jobId} from savedJobs of ${updateResult.modifiedCount} users`);
 
@@ -622,7 +625,7 @@ export const getApplicationDetails = async (req, res, next) => {
         });
     } catch (error) {
         next(error);
-      }
+    }
 };
 
 export const getApplicantDetails = async (req, res, next) => {
