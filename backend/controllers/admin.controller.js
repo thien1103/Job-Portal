@@ -24,8 +24,8 @@ export const deleteUser = async (req, res, next) => {
         }
 
         if (user.role === "recruiter") {
-            await Job.deleteMany({ createdBy: userId });
-            await Company.deleteMany({ createdBy: userId });
+            await Job.deleteMany({ created_by: userId });
+            await Company.deleteMany({ userId: userId });
         }
         await Application.deleteMany({ userId });
         await RefreshToken.deleteMany({ userId });
