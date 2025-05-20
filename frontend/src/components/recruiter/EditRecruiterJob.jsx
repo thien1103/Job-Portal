@@ -213,13 +213,13 @@ const EditJob = () => {
               </div>
               <div>
                 <Label>Requirements (Separate lines with Enter)</Label>
-                <Input
-                  type="text"
+                <Textarea
                   name="requirements"
                   value={input.requirements}
                   onChange={changeEventHandler}
                   className="focus-visible:ring-offset-0 focus-visible:ring-0 my-1"
                   placeholder="Enter each requirement on a new line"
+                  rows={4}
                 />
               </div>
               <div>
@@ -348,8 +348,8 @@ const EditJob = () => {
               </div>
               <div>
                 <Label>Benefits (Separate with commas)</Label>
-                <Input
-                  type="text"
+                <Textarea
+                  rows={4}
                   name="benefits"
                   value={input.benefits}
                   onChange={changeEventHandler}
