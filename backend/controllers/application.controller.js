@@ -306,8 +306,38 @@ export const updateStatus = async (req, res, next) => {
             } catch (emailError) {
                 console.error("Failed to send email, proceeding with status update:", emailError.message);
             }
-          }
+        }
 
+        if (normalizedStatus === "accepted") {
+            const applicantName = application.applicant.fullname || "Applicant";
+            const emailSubject = "Congratulations! Your Job Application Has Been Accepted";
+            const emailText = `
+              Dear ${applicantName},
+              
+              We are pleased to inform you that your application for the position "${job.title || "Unknown Position"}" at ${job.company.name || "Unknown Company"} has been accepted.
+              
+              This is a significant step forward, and we are excited to move to the next phase of the hiring process. Please contact the recruiter for further details regarding your interview or onboarding process.
+              
+              Thank you for choosing to apply with us!
+              
+              Best regards,
+              Job Portal Team
+            `;
+            const emailHtml = `
+              <h2>Application Status Update</h2>
+              <p>Dear ${applicantName},</p>
+              <p>We are pleased to inform you that your application for the position <strong>"${job.title || "Unknown Position"}"</strong> at <strong>${job.company.name || "Unknown Company"}</strong> has been accepted.</p>
+              <p>This is a significant step forward, and we are excited to move to the next phase of the hiring process. Please contact the recruiter for further details regarding your interview or onboarding process.</p>
+              <p>Thank you for choosing to apply with us!</p>
+              <p>Best regards,<br>Job Portal Team</p>
+            `;
+
+            try {
+                await sendEmail(application.applicant.email, emailSubject, emailText, emailHtml);
+            } catch (emailError) {
+                console.error("Failed to send email, proceeding with status update:", emailError.message);
+            }
+        }
 
         // const newStatus = status.toLowerCase();
         // application.status = newStatus;
@@ -318,12 +348,12 @@ export const updateStatus = async (req, res, next) => {
         //     const emailSubject = "Your Job Application Has Been Rejected";
         //     const emailText = `
         //         Dear ${applicantName},
-                
+
         //         We regret to inform you that your application for the position "${job.title || "Unknown Position"}" at ${job.company.name || "Unknown Company"} has been rejected.
-                
+
         //         Thank you for your interest in our company. We encourage you to apply for other positions that match your skills.
         //         If you have any questions, please contact the recruiter.
-                
+
         //         Best regards,
         //         Job Portal Team
         //     `;
