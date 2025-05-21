@@ -821,7 +821,7 @@ const Profile = () => {
           </div>
           <div className="flex items-center gap-3 my-2">
             <Contact />
-            <span>{user?.phoneNumber}</span>
+            <span>(+84) {user?.phoneNumber}</span>
           </div>
         </div>
 

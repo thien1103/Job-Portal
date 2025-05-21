@@ -284,7 +284,7 @@ const VisitUserPage = () => {
           </div>
           <div className="flex items-center gap-3 my-2">
             <Contact />
-            <span>{phoneNumber || "Not provided"}</span>
+            <span>(+84) {phoneNumber || "Not provided"}</span>
           </div>
         </div>
 
