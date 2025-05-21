@@ -22,7 +22,7 @@ const Applicants = () => {
           }
         );
         if (res.data.success) {
-            console.log("fetchAllApplicant data: ", res.data)
+          console.log("fetchAllApplicant data: ", res.data);
           dispatch(setAllApplicants(res.data.applications));
         }
       } catch (error) {

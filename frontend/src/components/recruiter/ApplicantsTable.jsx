@@ -14,14 +14,23 @@ import { JOB_API_END_POINT, APPLICATION_API_END_POINT } from "@/utils/constant";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+
 
 const ApplicantsTable = () => {
   const params = useParams();
-  const { applicants } = useSelector((store) => store.application);
+  const [applicants, setApplicants] = useState([]);
   const [detailedApplicants, setDetailedApplicants] = useState({});
   const [noApplicants, setNoApplicants] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState({});
+  const [selectedCoverLetter, setSelectedCoverLetter] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const fetchApplicationDetails = async (jobId, applicationId) => {
     try {
@@ -35,49 +44,67 @@ const ApplicantsTable = () => {
           [applicationId]: res.data.application,
         }));
       }
+      return true; // Trả về true khi thành công
     } catch (error) {
       toast.error("Failed to fetch application details.");
-      if (error.response?.status === 404) {
-        setNoApplicants(true);
-      }
+      return false; // Trả về false nếu có lỗi
     }
   };
 
-  const formatDate = (dateStr) => {
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        setNoApplicants(false);
+
+        // Bước 1: Fetch danh sách applicants
+        const applicantsResponse = await axios.get(
+          `${JOB_API_END_POINT}/${params.id}/applications`,
+          { withCredentials: true }
+        );
+
+        if (
+          !applicantsResponse.data.success ||
+          !applicantsResponse.data.applications?.length
+        ) {
+          setNoApplicants(true);
+          return;
+        }
+
+        const apps = applicantsResponse.data.applications;
+        setApplicants(apps);
+
+        // Bước 2: Fetch chi tiết cho từng applicant
+        const detailPromises = apps.map((app) =>
+          fetchApplicationDetails(params.id, app.applicationId)
+        );
+
+        // Chờ tất cả các promise hoàn thành
+        const results = await Promise.all(detailPromises);
+        
+        // Kiểm tra nếu có bất kỳ request nào thất bại
+        const hasErrors = results.some((success) => !success);
+        if (hasErrors) {
+          toast.error("Some details failed to load");
+        }
+      } catch (error) {
+        toast.error("Failed to fetch applicants data");
+        setNoApplicants(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, [params.id]);
+
+    const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return `${String(date.getMonth() + 1).padStart(
       2,
       "0"
     )}/${date.getFullYear()}`;
   };
-
-  useEffect(() => {
-    const fetchApplicantsData = async () => {
-      setLoading(true); // Ensure loading starts as true
-      setNoApplicants(false); // Reset noApplicants
-
-      // If applicants is null, undefined, or an empty array, show "No Applicants"
-      if (!applicants || applicants.length === 0) {
-        setNoApplicants(true);
-        setLoading(false);
-        return;
-      }
-
-      const promises = applicants.map((applicant) => {
-        const id = applicant.applicationId;
-        if (!detailedApplicants[id]) {
-          return fetchApplicationDetails(params.id, id);
-        }
-        return null;
-      });
-
-      await Promise.all(promises.filter(Boolean));
-      setLoading(false);
-    };
-
-    fetchApplicantsData();
-  }, [applicants, params.id]); // Dependencies: applicants and params.id
-
   const statusHandler = async (status, id) => {
     setStatusLoading((prev) => ({ ...prev, [id]: true }));
     try {
@@ -116,6 +143,7 @@ const ApplicantsTable = () => {
             <TableHead>Email</TableHead>
             <TableHead>Contact</TableHead>
             <TableHead>Resume</TableHead>
+            <TableHead>Cover Letter</TableHead>
             <TableHead>Applied Date</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-center">Action</TableHead>
@@ -141,10 +169,10 @@ const ApplicantsTable = () => {
                       to={`/visit-user/${applicant._id}`}
                       className="text-blue-600 underline hover:text-blue-800 transition"
                     >
-                      {applicant.fullname || "N/A"}
+                      {applicant.fullname || "No CV"}
                     </Link>
                   </TableCell>
-                  <TableCell>{applicant.email || "N/A"}</TableCell>
+                  <TableCell>{applicant.email || "No cover letter"}</TableCell>
                   <TableCell>
                     {detailedData.job?.company?.contactInfo?.phone || "N/A"}
                   </TableCell>
@@ -160,6 +188,21 @@ const ApplicantsTable = () => {
                       </a>
                     ) : (
                       <span>NA</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {detailedData.coverLetter?.length > 0 ? (
+                      <button
+                        onClick={() => {
+                          setSelectedCoverLetter(detailedData.coverLetter.join("\n"));
+                          setIsDialogOpen(true);
+                        }}
+                        className="text-blue-600 underline hover:text-blue-800 transition cursor-pointer"
+                      >
+                        Open Cover Letter
+                      </button>
+                    ) : (
+                      "No cover letter"
                     )}
                   </TableCell>
                   <TableCell>
@@ -210,6 +253,17 @@ const ApplicantsTable = () => {
           )}
         </TableBody>
       </Table>
+            {/* Cover Letter Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent  className="top-[30%]">
+          <DialogHeader>
+            <DialogTitle>Cover Letter Content</DialogTitle>
+          </DialogHeader>
+          <div className="whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+            {selectedCoverLetter || "No cover letter content available"}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
