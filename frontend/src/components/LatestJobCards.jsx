@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Badge } from "./ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +10,7 @@ import axios from "axios";
 import { USER_API_END_POINT } from "@/utils/constant";
 import { toast } from "sonner";
 import { setSavedJobIds } from "@/redux/jobSlice";
+
 
 const LatestJobCards = ({ job, savedJobIds = [] }) => {
   const navigate = useNavigate();
