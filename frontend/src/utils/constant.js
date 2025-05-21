@@ -1,4 +1,6 @@
-export const USER_API_END_POINT="http://localhost:8000/api/v1/user";
-export const JOB_API_END_POINT="http://localhost:8000/api/v1/job";
-export const APPLICATION_API_END_POINT="http://localhost:8000/api/v1/application";
-export const COMPANY_API_END_POINT="http://localhost:8000/api/v1/company";
+// constant.js
+export const USER_API_END_POINT = "https://job-search-hboi.onrender.com/user";
+export const JOB_API_END_POINT = "https://job-search-hboi.onrender.com/job";
+export const APPLICATION_API_END_POINT = "https://job-search-hboi.onrender.com/application";
+export const COMPANY_API_END_POINT = "https://job-search-hboi.onrender.com/company";
+export const ADMIN_API_END_POINT = "https://job-search-hboi.onrender.com/admin";
