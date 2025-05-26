@@ -3,7 +3,7 @@ import { Job } from "../models/job.model.js";
 import { createError } from "../utils/appError.js";
 import { Company } from "../models/company.model.js";
 import { sendEmail } from "../middlewares/nodemailer.js";
-
+import { User } from "../models/user.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../configs/cloudinary.js";
 
