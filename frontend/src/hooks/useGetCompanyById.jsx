@@ -1,26 +1,39 @@
-import { setSingleCompany } from '@/redux/companySlice'
-import { setAllJobs } from '@/redux/jobSlice'
-import { COMPANY_API_END_POINT, JOB_API_END_POINT } from '@/utils/constant'
-import axios from 'axios'
-import { useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { setSingleCompany } from "@/redux/companySlice";
+import { COMPANY_API_END_POINT } from "@/utils/constant";
+import axios from "axios";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 
 const useGetCompanyById = (companyId) => {
-    const dispatch = useDispatch();
-    useEffect(()=>{
-        const fetchSingleCompany = async () => {
-            try {
-                const res = await axios.get(`${COMPANY_API_END_POINT}/get/${companyId}`,{withCredentials:true});
-                console.log(res.data.company);
-                if(res.data.success){
-                    dispatch(setSingleCompany(res.data.company));
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        }
-        fetchSingleCompany();
-    },[companyId, dispatch])
-}
+  const dispatch = useDispatch();
+  console.log("useGetCompanyById hook called with ID:", companyId);
 
-export default useGetCompanyById
+  useEffect(() => {
+    console.log("useGetCompanyById: useEffect triggered");
+    const fetchCompany = async () => {
+      try {
+        console.log(`Fetching company from: ${COMPANY_API_END_POINT}/${companyId}`);
+        const res = await axios.get(`${COMPANY_API_END_POINT}/${companyId}`, {
+          withCredentials: true,
+        });
+        console.log("API Response:", res.data);
+        if (res.data.success) {
+          console.log("Dispatching single company:", res.data.company);
+          dispatch(setSingleCompany(res.data.company));
+        } else {
+          console.log("API success is false, no data dispatched");
+          dispatch(setSingleCompany(null));
+        }
+      } catch (error) {
+        console.error("Error fetching company:", error.message);
+        if (error.response) {
+          console.error("Error response data:", error.response.data);
+        }
+        dispatch(setSingleCompany(null));
+      }
+    };
+    fetchCompany();
+  }, [companyId]);
+};
+
+export default useGetCompanyById;

@@ -6,6 +6,7 @@ import { createError } from "../utils/appError.js";
 export const isAuthenticated = async (req, res, next) => {
     try {
         const token = req.cookies.token;
+        
         if (!token) {
             throw createError('User not authenticated', 401);
         }
