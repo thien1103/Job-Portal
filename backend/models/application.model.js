@@ -27,7 +27,11 @@ const applicationSchema = new mongoose.Schema({
     rejectedAt: {
         type: Date,
         // index: { expires: 172800 } // 2 days
-        index: { expires: 300 } // 2 days
+        index: { expires: 300 }
+    },
+    acceptedAt: {
+        type: Date,
+        index: { expires: 300 }
     }
 }, { timestamps: true });
 
