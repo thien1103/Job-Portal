@@ -32,7 +32,7 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
 
         // Trim inputs to check for empty values
         const trimmedFullname = input.fullname.trim();
-        const trimmedBio = input.bio.trim();
+        // const trimmedBio = input.bio.trim();
         const trimmedSkills = input.skills.trim();
 
         // Validation
@@ -40,10 +40,10 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
             toast.error("Full Name is required.");
             return;
         }
-        if (!trimmedBio) {
-            toast.error("Bio is required.");
-            return;
-        }
+        // if (!trimmedBio) {
+        //     toast.error("Bio is required.");
+        //     return;
+        // }
         if (!trimmedSkills) {
             toast.error("Skills are required.");
             return;
@@ -51,7 +51,7 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
 
         const dataToSubmit = {
             fuller: trimmedFullname,
-            bio: trimmedBio,
+            bio: input.bio,
             skills: trimmedSkills.split(",").map(skill => skill.trim()),
         };
 
