@@ -3,7 +3,7 @@ import { Job } from "../models/job.model.js";
 import { createError } from "../utils/appError.js";
 import { Company } from "../models/company.model.js";
 import { sendEmail } from "../middlewares/nodemailer.js";
-
+import { User } from "../models/user.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../configs/cloudinary.js";
 
@@ -266,12 +266,20 @@ export const updateStatus = async (req, res, next) => {
             throw createError("You are not authorized to update this application", 403);
         }
 
+        const recruiter = await User.findById(company.userId).select("email");
+        if (!recruiter || !recruiter.email) {
+            throw createError("Recruiter email not found", 500);
+        }
+        const recruiterEmail = recruiter.email;
+
         const normalizedStatus = status.toLowerCase() === "accept" ? "accepted" : status.toLowerCase();
         application.status = normalizedStatus;
         if (normalizedStatus === "rejected") {
-            application.rejectedAt = new Date(); // Set for TTL deletion after 5 days
-        } else {
-            application.rejectedAt = null; // Clear if status changes from rejected
+            application.rejectedAt = new Date(); // Set for TTL deletion (5 minutes)
+            application.acceptedAt = null; // Clear acceptedAt
+        } else if (normalizedStatus === "accepted") {
+            application.acceptedAt = new Date(); // Set for TTL deletion (7 days)
+            application.rejectedAt = null; // Clear rejectedAt
         }
         await application.save();
 
@@ -281,10 +289,11 @@ export const updateStatus = async (req, res, next) => {
             const emailText = `
               Dear ${applicantName},
               
+              This email is sent from the Job Portal System on behalf of ${job.company.name}.
               We regret to inform you that your application for the position "${job.title || "Unknown Position"}" at ${job.company.name || "Unknown Company"} has been rejected.
               
-              Thank you for your interest in our company. We encourage you to apply for other positions that match your skills.
-              If you have any questions, please contact the recruiter.
+              Thank you for your interest in the company. You are encouraged to apply for other positions that match your skills.
+              If you have any questions, please contact the recruiter at ${recruiterEmail}.
               
               Note: Your application data will be automatically deleted after 5 days.
               
@@ -294,11 +303,12 @@ export const updateStatus = async (req, res, next) => {
             const emailHtml = `
               <h2>Application Status Update</h2>
               <p>Dear ${applicantName},</p>
+              <p>This email is sent from the <strong>Job Portal System</strong> on behalf of <strong>${job.company.name}</strong>.</p>
               <p>We regret to inform you that your application for the position <strong>"${job.title || "Unknown Position"}"</strong> at <strong>${job.company.name || "Unknown Company"}</strong> has been rejected.</p>
-              <p>Thank you for your interest in our company. We encourage you to apply for other positions that match your skills.</p>
-              <p>If you have any questions, please contact the recruiter.</p>
+              <p>Thank you for your interest in the company. You are encouraged to apply for other positions that match your skills.</p>
+              <p>If you have any questions, please contact the recruiter at <strong>${recruiterEmail}</strong>.</p>
               <p><strong>Note:</strong> Your application data will be automatically deleted after 5 days.</p>
-              <p>Best regards,<br>Job Portal Team</p>
+              <p>Best regards,<br>Job Portal System</p>
             `;
 
             try {
@@ -314,22 +324,24 @@ export const updateStatus = async (req, res, next) => {
             const emailText = `
               Dear ${applicantName},
               
+              This email is sent from the Job Portal System on behalf of ${job.company.name}.
               We are pleased to inform you that your application for the position "${job.title || "Unknown Position"}" at ${job.company.name || "Unknown Company"} has been accepted.
               
-              This is a significant step forward, and we are excited to move to the next phase of the hiring process. Please contact the recruiter for further details regarding your interview or onboarding process.
+              This is a significant step forward, and we are excited to move to the next phase of the hiring process. Please contact the recruiter at ${recruiterEmail} for further details regarding your interview or onboarding process.
               
               Thank you for choosing to apply with us!
               
               Best regards,
-              Job Portal Team
+              Job Portal System
             `;
             const emailHtml = `
               <h2>Application Status Update</h2>
               <p>Dear ${applicantName},</p>
+              <p>This email is sent from the <strong>Job Portal System</strong> on behalf of <strong>${job.company.name}</strong>.</p>
               <p>We are pleased to inform you that your application for the position <strong>"${job.title || "Unknown Position"}"</strong> at <strong>${job.company.name || "Unknown Company"}</strong> has been accepted.</p>
-              <p>This is a significant step forward, and we are excited to move to the next phase of the hiring process. Please contact the recruiter for further details regarding your interview or onboarding process.</p>
+              <p>This is a significant step forward, and we are excited to move to the next phase of the hiring process. Please contact the recruiter at <strong>${recruiterEmail}</strong> for further details regarding your interview or onboarding process.</p>
               <p>Thank you for choosing to apply with us!</p>
-              <p>Best regards,<br>Job Portal Team</p>
+              <p>Best regards,<br>Job Portal System</p>
             `;
 
             try {
@@ -338,40 +350,6 @@ export const updateStatus = async (req, res, next) => {
                 console.error("Failed to send email, proceeding with status update:", emailError.message);
             }
         }
-
-        // const newStatus = status.toLowerCase();
-        // application.status = newStatus;
-        // await application.save();
-
-        // if (newStatus === "rejected") {
-        //     const applicantName = application.applicant.fullname || "Applicant";
-        //     const emailSubject = "Your Job Application Has Been Rejected";
-        //     const emailText = `
-        //         Dear ${applicantName},
-
-        //         We regret to inform you that your application for the position "${job.title || "Unknown Position"}" at ${job.company.name || "Unknown Company"} has been rejected.
-
-        //         Thank you for your interest in our company. We encourage you to apply for other positions that match your skills.
-        //         If you have any questions, please contact the recruiter.
-
-        //         Best regards,
-        //         Job Portal Team
-        //     `;
-        //     const emailHtml = `
-        //         <h2>Application Status Update</h2>
-        //         <p>Dear ${applicantName},</p>
-        //         <p>We regret to inform you that your application for the position <strong>"${job.title || "Unknown Position"}"</strong> at <strong>${job.company.name || "Unknown Company"}</strong> has been rejected.</p>
-        //         <p>Thank you for your interest in our company. We encourage you to apply for other positions that match your skills.</p>
-        //         <p>If you have any questions, please contact the recruiter.</p>
-        //         <p>Best regards,<br>Job Portal Team</p>
-        //     `;
-
-        //     try {
-        //         await sendEmail(application.applicant.email, emailSubject, emailText, emailHtml);
-        //     } catch (emailError) {
-        //         console.error("Failed to send email, proceeding with status update:", emailError.message);
-        //     }
-        // }
 
         const populatedApplication = await Application.findById(applicationId)
             .populate({
@@ -419,6 +397,7 @@ export const updateStatus = async (req, res, next) => {
                 createdAt: populatedApplication.createdAt,
                 updatedAt: populatedApplication.updatedAt,
                 rejectedAt: populatedApplication.rejectedAt,
+                acceptedAt: populatedApplication.acceptedAt
             },
             success: true
         });
@@ -461,43 +440,38 @@ export const deleteApplication = async (req, res, next) => {
             throw createError("Applicant email is missing", 400);
         }
 
-        // await Job.updateOne(
-        //     { _id: application.job._id },
-        //     { $pull: { applications: applicationId } }
-        // );
-
         if (application.resume) {
             const publicId = application.resume.split("/").pop().split(".")[0];
             await cloudinary.uploader.destroy(`resumes/${publicId}`, { resource_type: "raw" });
         }
 
-        const deletedBy = `the recruiter at ${application.job.company.name}`;
-        const emailSubject = "Your Job Application Has Been Deleted";
-        const emailText = `
-            Dear ${application.applicant.fullname},
-            
-            Your application for the position "${application.job.title}" has been deleted by ${deletedBy}.
-            Application Status: ${application.status}
-            Company: ${application.job.company.name}
-            
-            If you have any questions, please contact the recruiter.
-            
-            Best regards,
-            Job Portal Team
-        `;
-        const emailHtml = `
-            <h2>Application Deleted</h2>
-            <p>Dear ${application.applicant.fullname},</p>
-            <p>Your application for the position <strong>"${application.job.title}"</strong> has been deleted by ${deletedBy}.</p>
-            <ul>
-                <li><strong>Application Status:</strong> ${application.status}</li>
-                <li><strong>Company:</strong> ${application.job.company.name}</li>
-            </ul>
-            <p>If you have any questions, please contact the recruiter.</p>
-            <p>Best regards,<br>Job Portal Team</p>
-        `;
+        // const deletedBy = `the recruiter at ${application.job.company.name}`;
+        // const emailSubject = "Your Job Application Has Been Deleted";
+        // const emailText = `
+        //     Dear ${application.applicant.fullname},
 
-        await sendEmail(application.applicant.email, emailSubject, emailText, emailHtml);
+        //     Your application for the position "${application.job.title}" has been deleted by ${deletedBy}.
+        //     Application Status: ${application.status}
+        //     Company: ${application.job.company.name}
+
+        //     If you have any questions, please contact the recruiter.
+
+        //     Best regards,
+        //     Job Portal Team
+        // `;
+        // const emailHtml = `
+        //     <h2>Application Deleted</h2>
+        //     <p>Dear ${application.applicant.fullname},</p>
+        //     <p>Your application for the position <strong>"${application.job.title}"</strong> has been deleted by ${deletedBy}.</p>
+        //     <ul>
+        //         <li><strong>Application Status:</strong> ${application.status}</li>
+        //         <li><strong>Company:</strong> ${application.job.company.name}</li>
+        //     </ul>
+        //     <p>If you have any questions, please contact the recruiter.</p>
+        //     <p>Best regards,<br>Job Portal Team</p>
+        // `;
+
+        // await sendEmail(application.applicant.email, emailSubject, emailText, emailHtml);
 
         await Application.findByIdAndDelete(applicationId);
 
@@ -506,7 +480,7 @@ export const deleteApplication = async (req, res, next) => {
             data: {
                 applicationId,
                 jobId: application.job._id,
-                deletedBy: "recruiter",
+                // deletedBy: "recruiter",
                 status: application.status
             },
             success: true
