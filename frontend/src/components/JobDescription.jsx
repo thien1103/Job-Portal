@@ -32,18 +32,48 @@ const JobDescription = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [deadlineInfo, setDeadlineInfo] = useState({ formatted: "N/A", daysLeft: null, isExpired: false });
 
   const params = useParams();
   const jobId = params.id;
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Calculate deadline info
+  useEffect(() => {
+    if (singleJob?.deadline) {
+      const deadlineDate = new Date(singleJob.deadline);
+      const currentDate = new Date("2025-05-28T00:00:00.000Z"); // Current date: May 28, 2025
+
+      // Format deadline to human-readable date (e.g., "June 26, 2025")
+      const formattedDeadline = deadlineDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      // Calculate days left
+      const timeDiff = deadlineDate - currentDate;
+      const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+      // Determine if expired
+      const isExpired = daysLeft < 0;
+
+      setDeadlineInfo({
+        formatted: formattedDeadline,
+        daysLeft: isExpired ? 0 : daysLeft,
+        isExpired,
+      });
+    } else {
+      setDeadlineInfo({ formatted: "N/A", daysLeft: null, isExpired: false });
+    }
+  }, [singleJob?.deadline]);
+
   useEffect(() => {
     const checkApplicationStatus = async () => {
       if (!user || !jobId) return;
       setIsChecking(true);
       try {
-        0x0a0a0a;
         const res = await axios.post(
           `${APPLICATION_API_END_POINT}/check/${jobId}`,
           {},
@@ -264,15 +294,15 @@ const JobDescription = () => {
           <div className="flex gap-4">
             <Button
               onClick={() => setOpenDialog(true)}
-              disabled={isChecking || isApplied}
+              disabled={isChecking || isApplied || deadlineInfo.isExpired}
               className={`rounded-lg flex-1 ${
-                isChecking ? "bg-gray-500 cursor-not-allowed" :
+                isChecking || deadlineInfo.isExpired ? "bg-gray-500 cursor-not-allowed" :
                 isApplied ? "bg-gray-600 cursor-not-allowed" :
                 "bg-green-600 hover:bg-green-700 text-white"
               }`}
             >
               <img src="https://cdn-icons-png.flaticon.com/128/561/561226.png" className="w-[18px] h-[18px] mr-4" alt="Apply Icon" />
-              {isChecking ? "Checking..." : isApplied ? "Already Applied" : "Apply Now"}
+              {isChecking ? "Checking..." : isApplied ? "Already Applied" : deadlineInfo.isExpired ? "Expired" : "Apply Now"}
             </Button>
             <Button
               variant="outline"
@@ -326,7 +356,7 @@ const JobDescription = () => {
                       onChange={handleFileChange}
                     />
                   </>
-               )}
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -441,11 +471,15 @@ const JobDescription = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-green-600">
-                    <img src="https://cdn-icons-png.flaticon.com/128/2838/2838590.png" className="w-[40px] h-[40px] mr-4" alt="Working Time Icon" />
+                    <img src="https://cdn-icons-png.flaticon.com/128/2838/2838590.png" className="w-[40px] h-[40px] mr-4" alt="Deadline Icon" />
                   </span>
                   <div>
-                    <h2 className="font-bold">Working Time:</h2>
-                    <p className="text-gray-800">Contact</p>
+                    <h2 className="font-bold">Deadline for Submission:</h2>
+                    <p className="text-gray-800">
+                      {deadlineInfo.formatted}
+                      {deadlineInfo.daysLeft !== null && !deadlineInfo.isExpired ? ` (${deadlineInfo.daysLeft} day${deadlineInfo.daysLeft !== 1 ? 's' : ''} left)` : ""}
+                      {deadlineInfo.isExpired ? " (Expired)" : ""}
+                    </p>
                   </div>
                 </div>
               </div>
