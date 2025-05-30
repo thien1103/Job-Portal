@@ -50,6 +50,7 @@ const EditJob = () => {
           withCredentials: true,
         });
         if (res.data.success) {
+          console.log("Fetched job data:", res.data.job);
           const job = res.data.job;
           const isOther = !["Hồ Chí Minh", "Hà Nội", "Đà Nẵng"].includes(
             job.location
@@ -62,7 +63,9 @@ const EditJob = () => {
             salary: job.salary ? job.salary.toString() : "",
             location: isOther ? "Other" : job.location || "",
             jobType: job.jobType || "",
-            experience: job.experience ? job.experience.toString() : "",
+            experience: job.experienceLevel !== undefined
+              ? job.experienceLevel.toString()
+              : "",
             position: job.position || 0,
             deadline: job.deadline
               ? new Date(job.deadline).toISOString().split("T")[0]
