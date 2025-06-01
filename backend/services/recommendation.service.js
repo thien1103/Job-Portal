@@ -44,7 +44,6 @@ export const recommendJobs = async (userId, topN = 5) => {
 
         const userSkills = user.profile.skills ? user.profile.skills.map(normalize) : ['communication', 'teamwork'];
         const expandedSkills = expandSkills([...new Set(userSkills)]);
-        const userExperience = calculateExperienceYears(user.experience);
 
         const tfidf = new natural.TfIdf();
         if (user.profile.bio) {
