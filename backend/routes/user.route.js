@@ -6,7 +6,7 @@ import {
     addEducation, getEducation, updateEducation, deleteEducation,
     getApplicantProfile, getApplicantPrimaryCV,
     getCurrentUser, updateProfileFromCV,
-    saveJob, getSavedJobs, unsaveJob,
+    saveJob, getSavedJobs, unsaveJob, setFindJobStatus
 } from "../controllers/user.controller.js";
 import { isApplicant, isAuthenticated, isRecruiter } from "../middlewares/isAuthenticated.js";
 import { singleUpload } from "../middlewares/multer.js";
@@ -24,6 +24,7 @@ router.get("/profile", isAuthenticated, getProfile);
 router.post("/profile/update", isAuthenticated, singleUpload, updateProfile);
 router.post("/profile/update-from-cv", isAuthenticated, singleUpload, updateProfileFromCV)
 router.patch("/profile/public", isAuthenticated, setProfilePublic);
+router.patch("/profile/find-job", isAuthenticated, isApplicant, setFindJobStatus);
 router.post("/profile/experience", isAuthenticated, addExperience);
 router.get("/profile/experience", isAuthenticated, getExperience);
 router.patch("/profile/experience/:id", isAuthenticated, updateExperience);
