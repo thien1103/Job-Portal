@@ -3,7 +3,7 @@ import { isApplicant, isAuthenticated, isRecruiter } from "../middlewares/isAuth
 import {
     getRecruiterJobs, getAllJobs, getJobById, postJob, updateJob, deleteJob,
     getApplicationDetails, getJobApplicants, getApplicantDetails,
-    searchJobs, getRecommendedJobs
+    searchJobs, getRecommendedJobs, getPotentialApplicants
 } from "../controllers/job.controller.js";
 
 const router = express.Router();
@@ -14,6 +14,7 @@ router.get("/recommended-jobs", isAuthenticated, isApplicant, getRecommendedJobs
 router.get("/", getAllJobs);
 router.get("/:id", getJobById);
 router.get("/:id/applications", isAuthenticated, isRecruiter, getJobApplicants);
+router.get("/:id/potential-applicants", isAuthenticated, isRecruiter, getPotentialApplicants);
 router.get("/:id/applications/:applicationId", isAuthenticated, isRecruiter, getApplicationDetails);
 router.get("/applications/:id", isAuthenticated, isRecruiter, getApplicantDetails);
 

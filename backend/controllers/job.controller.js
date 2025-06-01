@@ -4,6 +4,7 @@ import { Company } from "../models/company.model.js";
 import { Application } from "../models/application.model.js";
 import { User } from "../models/user.model.js";
 import { recommendJobs } from '../services/recommendation.service.js';
+import { findPotentialApplicants } from '../services/potentialApplicants.service.js';
 
 export const postJob = async (req, res, next) => {
     try {
@@ -777,20 +778,44 @@ export const getRecommendedJobs = async (req, res, next) => {
         const userId = req.user._id;
         const recommendations = await recommendJobs(userId);
 
-        if (recommendations.length === 0) {
-            return res.status(200).json({
-                message: 'No job found. Please update your skills',
-                success: true,
-                data: [],
-            });
-          }
         return res.status(200).json({
-            message: 'Job found',
-            success: true,
-            data: recommendations,
+            message: recommendations.message,
+            success: recommendations.success,
+            data: recommendations.data
         });
     } catch (error) {
         console.log("Error in getRecommendedJobs: ", error);
+        next(error);
+    }
+};
+
+export const getPotentialApplicants = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        if (!userId) {
+            throw createError('User not authenticated', 401);
+        }
+
+        const { id: jobId } = req.params;
+        if (!jobId) {
+            throw createError('Job ID not found', 400);
+        }
+
+        // Tìm job
+        const job = await Job.findById(jobId);
+        if (!job) {
+            throw createError('Job not found', 404);
+        }
+
+        const potentialApplicants = await findPotentialApplicants(job, 10);
+
+        return res.status(200).json({
+            message: potentialApplicants.message,
+            success: potentialApplicants.success,
+            data: potentialApplicants.data
+        });
+    } catch (error) {
+        console.error('Error getPotentialApplicants:', error);
         next(error);
     }
 };
