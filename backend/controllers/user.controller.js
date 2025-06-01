@@ -417,6 +417,36 @@ export const setFindJobStatus = async (req, res, next) => {
     }
 };
 
+export const getFindJobStatus = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        if (!userId) {
+            throw createError('User not authenticated', 401);
+        }
+
+        const user = await User.findById(userId).select('role profile.isFindJob profile.lastFindJobUpdate');
+        if (!user) {
+            throw createError('User not found', 404);
+        }
+
+        if (user.role !== 'applicant') {
+            throw createError('Only applicants can view job search status', 403);
+        }
+
+        return res.status(200).json({
+            message: 'Find job status retrieved successfully',
+            success: true,
+            data: {
+                isFindJob: user.profile.isFindJob,
+                lastFindJobUpdate: user.profile.lastFindJobUpdate
+            }
+        });
+    } catch (error) {
+        console.error('Error in getFindJobStatus:', error);
+        next(error);
+    }
+};
+
 export const changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
