@@ -54,4 +54,8 @@ const userSchema = new mongoose.Schema({
     },
     savedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Job" }],
 }, { timestamps: true });
+
+userSchema.index({ skills: 1 });
+userSchema.index({ experience: 1 });
+userSchema.index({ savedJobs: 1 });
 export const User = mongoose.model('User', userSchema);

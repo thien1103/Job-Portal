@@ -67,5 +67,8 @@ jobSchema.index({ title: "text", description: "text", location: "text", requirem
 jobSchema.index({ deadline: 1 }); 
 jobSchema.index({ level: 1 });
 jobSchema.index({ applications: 1 });
+jobSchema.index({ requirements: 1 });
+jobSchema.index({ experienceLevel: 1 });
+jobSchema.index({ company: 1 });
 
 export const Job = mongoose.model("Job", jobSchema);

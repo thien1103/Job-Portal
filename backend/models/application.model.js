@@ -35,4 +35,7 @@ const applicationSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+applicationSchema.index({ applicant: 1 });
+applicationSchema.index({ job: 1 });
+
 export const Application = mongoose.model("Application", applicationSchema);

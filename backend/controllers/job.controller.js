@@ -3,6 +3,7 @@ import { createError } from "../utils/appError.js";
 import { Company } from "../models/company.model.js";
 import { Application } from "../models/application.model.js";
 import { User } from "../models/user.model.js";
+import { recommendJobs } from '../services/recommendation.service.js';
 
 export const postJob = async (req, res, next) => {
     try {
@@ -14,6 +15,10 @@ export const postJob = async (req, res, next) => {
             !experience || !position || !companyId || !deadline || !benefits || !level) {
             throw createError("All required fields must be provided", 400);
         };
+
+        if (isNaN(experience) || Number(experience) < 0) {
+            throw createError("Experience must be a non-negative number", 400);
+        }
 
         const validJobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'];
         if (!validJobTypes.includes(jobType)) {
@@ -412,7 +417,6 @@ export const getJobById = async (req, res, next) => {
         const descriptionLines = job.description
             ? job.description.split("\n").map(line => line.trim()).filter(line => line)
             : [];
-
         return res.status(200).json({
             job: {
                 title: job.title,
@@ -764,6 +768,29 @@ export const searchJobs = async (req, res, next) => {
         });
     } catch (error) {
         console.log("Error in searchJobs: ", error);
+        next(error);
+    }
+};
+
+export const getRecommendedJobs = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const recommendations = await recommendJobs(userId);
+
+        if (recommendations.length === 0) {
+            return res.status(200).json({
+                message: 'No job found. Please update your skills',
+                success: true,
+                data: [],
+            });
+          }
+        return res.status(200).json({
+            message: 'Job found',
+            success: true,
+            data: recommendations,
+        });
+    } catch (error) {
+        console.log("Error in getRecommendedJobs: ", error);
         next(error);
     }
 };
