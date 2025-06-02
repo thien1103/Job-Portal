@@ -10,7 +10,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const MyCV = () => {
   const [cvList, setCvList] = useState([]);
-  const [jobSeekingStatus, setJobSeekingStatus] = useState(true);
   const [file, setFile] = useState(null);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
@@ -18,21 +17,22 @@ const MyCV = () => {
   const [editingCV, setEditingCV] = useState(null);
   const [newTitle, setNewTitle] = useState("");
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [isProfilePublic, setIsProfilePublic] = useState(false); // New state for profile public status
-  const [hoveredCV, setHoveredCV] = useState(null); // State to track hovered CV
-
+  const [isProfilePublic, setIsProfilePublic] = useState(false);
+  const [isJobSeekingActive, setIsJobSeekingActive] = useState(true);
+  const [hoveredCV, setHoveredCV] = useState(null);
 
   const fetchProfile = async () => {
     try {
       const response = await axios.get(`${USER_API_END_POINT}/profile`, {
         withCredentials: true,
       });
-      console.log("user data:", response.data);
-      // Cập nhật state dựa trên giá trị isPublic từ API
-      setIsProfilePublic(response.data.user?.profile?.isPublic || false);
+      console.log("Profile response:", response.data);
+      const profile = response.data.user?.profile || {};
+      setIsProfilePublic(profile.isPublic || false);
+      console.log("isProfilePublic set to:", profile.isPublic || false);
     } catch (error) {
-      toast.error("Không thể lấy trạng thái profile");
-      console.error(error);
+      toast.error("Không thể lấy thông tin profile");
+      console.error("Fetch profile error:", error);
     }
   };
 
@@ -42,7 +42,7 @@ const MyCV = () => {
       const response = await axios.get(`${USER_API_END_POINT}/cv`, {
         withCredentials: true,
       });
-      console.log(response.data);
+      console.log("CVs response:", response.data);
       setCvList(response.data.cvs || []);
     } catch (error) {
       toast.error("Unable to fetch CV.");
@@ -56,7 +56,7 @@ const MyCV = () => {
         withCredentials: true,
       });
       toast.success(response.data.message || "Delete CV successfully.");
-      fetchCVs(); // Refresh list after deletion
+      fetchCVs();
     } catch (error) {
       toast.error("Delete CV failed.");
       console.error(error);
@@ -68,23 +68,20 @@ const MyCV = () => {
     setOpenConfirmDialog(true);
   };
 
-  // Utility to remove all accents and non-ASCII chars
   function makeAsciiOnly(str) {
     return str
-      .normalize("NFD") // decompose combined chars
-      .replace(/[\u0300-\u036f]/g, "") // strip diacritics
-      .replace(/[^\x00-\x7F]/g, ""); // strip any leftover non-ASCII
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x00-\x7F]/g, "");
   }
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error("Please chose a CV file.");
+      toast.error("Please choose a CV file.");
       return;
     }
 
-    // Turn "Hạo Thiên CV.pdf" into "Hao Thien CV.pdf"
     const safeName = makeAsciiOnly(file.name);
-
     const normalizedFile = new File([file], safeName, { type: file.type });
     const formData = new FormData();
     formData.append("file", normalizedFile);
@@ -119,7 +116,7 @@ const MyCV = () => {
         { withCredentials: true }
       );
       toast.success("Update primary CV successfully.");
-      fetchCVs(); // Refresh the CV list to reflect the change
+      fetchCVs();
     } catch (error) {
       toast.error("Update primary CV failed.");
       console.error(error);
@@ -142,13 +139,11 @@ const MyCV = () => {
     }
   };
 
-  // New handler to check if a CV is primary
   const isCVPrimary = (cvId) => {
     const cv = cvList.find((cv) => cv._id === cvId);
     return cv ? cv.isPrimary : false;
   };
 
-   // Sửa hàm handleSetProfilePublic để đồng bộ với server
   const handleSetProfilePublic = async () => {
     try {
       const response = await axios.patch(
@@ -156,7 +151,6 @@ const MyCV = () => {
         {},
         { withCredentials: true }
       );
-      // Fetch lại profile để cập nhật state chính xác
       await fetchProfile();
       toast.success(response.data.message);
     } catch (error) {
@@ -165,11 +159,55 @@ const MyCV = () => {
     }
   };
 
+  // Fetch job-seeking status from the API
+  const checkJobSeekingStatus = async () => {
+    try {
+      const response = await axios.get(
+        `${USER_API_END_POINT}/profile/find-job-status`,
+        {
+          withCredentials: true,
+        }
+      );
+      const status = response.data?.data?.isFindJob || false; // Access isFindJob from data object
+      setIsJobSeekingActive(status); // Set state to match API response
+      console.log("Fetched job seeking status:", status);
+    } catch (error) {
+      toast.error("Error checking job seeking status.");
+      console.error("Check job seeking status error:", error);
+    }
+  };
+
+  // Handle toggle of job-seeking status
+  const handleSetJobSeekingStatus = async (checked) => {
+    try {
+      setIsJobSeekingActive(checked); // Optimistically update state for instant UI feedback
+      const response = await axios.patch(
+        `${USER_API_END_POINT}/profile/find-job`,
+        { isFindJob: checked }, // Send the toggled value
+        { withCredentials: true }
+      );
+      toast.success(
+        response.data.message || "Job seeking status updated successfully."
+      );
+    } catch (error) {
+      // Revert state on failure for consistency
+      setIsJobSeekingActive(!checked);
+      toast.error("Error updating job seeking status.");
+      console.error("Job seeking status error:", error);
+    }
+  };
+
+  // Fetch initial data on mount
   useEffect(() => {
-    console.log("Fetching CVs...");
+    console.log("Fetching CVs, profile, and job seeking status...");
     fetchCVs();
-    fetchProfile(); // Thêm dòng này để chạy khi component mount
-  }, []);
+    fetchProfile();
+    checkJobSeekingStatus();
+  }, []); // Empty dependency array ensures this runs once on mount
+
+  useEffect(() => {
+    console.log("isJobSeekingActive updated:", isJobSeekingActive);
+  }, [isJobSeekingActive]);
 
   return (
     <div>
@@ -197,9 +235,7 @@ const MyCV = () => {
             <div className="text-center mt-16">
               {cvList.length === 0 ? (
                 <div>
-                  <span className="text-gray-500">
-                    No CV uploaded.
-                  </span>
+                  <span className="text-gray-500">No CV uploaded.</span>
                   <img
                     src="https://cdn-icons-png.flaticon.com/128/6818/6818206.png"
                     alt="No CV"
@@ -222,6 +258,8 @@ const MyCV = () => {
                         backgroundPosition: "center",
                         backgroundRepeat: "no-repeat",
                       }}
+                      onMouseEnter={() => setHoveredCV(cv._id)}
+                      onMouseLeave={() => setHoveredCV(null)}
                     >
                       <button
                         onClick={() => handleSetPrimaryCV(cv._id)}
@@ -237,7 +275,7 @@ const MyCV = () => {
                               Primary CV
                             </span>
                             <span className="text-white hidden group-hover:inline">
-                            Unset primary CV
+                              Unset primary CV
                             </span>
                           </>
                         ) : (
@@ -255,7 +293,6 @@ const MyCV = () => {
                         )}
                       </button>
 
-                      {/* CV avatar and title */}
                       <div className="flex items-start gap-4">
                         <img
                           src="https://cdn-icons-png.flaticon.com/128/4322/4322991.png"
@@ -294,10 +331,8 @@ const MyCV = () => {
                         </div>
                       </div>
 
-                      {/* Action buttons */}
                       <div className="mt-4 flex justify-between items-center">
                         <div className="flex gap-2">
-                          {/* Update Dialog */}
                           <Dialog.Root
                             open={openEditDialog}
                             onOpenChange={setOpenEditDialog}
@@ -332,7 +367,6 @@ const MyCV = () => {
                             </Dialog.Portal>
                           </Dialog.Root>
 
-                          {/* Update Button */}
                           <a
                             onClick={() => {
                               setEditingCV(cv);
@@ -384,7 +418,6 @@ const MyCV = () => {
                           </a>
                         </div>
 
-                        {/* Delete dialog */}
                         <Dialog.Root
                           open={openConfirmDialog}
                           onOpenChange={setOpenConfirmDialog}
@@ -416,7 +449,6 @@ const MyCV = () => {
                           </Dialog.Portal>
                         </Dialog.Root>
 
-                        {/* Delete button */}
                         <button
                           onClick={() => confirmDeleteCV(cv._id)}
                           className="flex items-center p-2 bg-transparent border-none cursor-pointer"
@@ -437,25 +469,45 @@ const MyCV = () => {
         </div>
 
         {/* Right section */}
-        <div className="bg-white p-6 rounded-lg shadow space-y-4">
-          <h3 className="font-bold text-gray-800 mt-4 mb-2">Profile Status</h3>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">
-              {isProfilePublic ? "Public" : "Private"}
-            </span>
-            <Switch.Root
-              checked={isProfilePublic}
-              onCheckedChange={handleSetProfilePublic}
-              className="w-11 h-6 bg-gray-200 rounded-full relative data-[state=checked]:bg-green-600"
-            >
-              <Switch.Thumb
-                className="block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 data-[state=checked]:translate-x-5"
-              />
-            </Switch.Root>
+        <div className="bg-white p-6 rounded-lg shadow space-y-6">
+          <div>
+            <h3 className="font-bold text-gray-800 mb-2">Profile Status</h3>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">
+                {isProfilePublic ? "Public" : "Private"}
+              </span>
+              <Switch.Root
+                checked={isProfilePublic}
+                onCheckedChange={handleSetProfilePublic}
+                className="w-11 h-6 bg-gray-200 rounded-full relative data-[state=checked]:bg-green-600"
+              >
+                <Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 data-[state=checked]:translate-x-5" />
+              </Switch.Root>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              If you set your profile status to public, everyone will be able to
+              see your profile.
+            </p>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            If you set your profile status to public, everyone will be able to see your profile.
-          </p>
+          <div>
+            <h3 className="font-bold text-gray-800 mb-2">Find Job Status</h3>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">
+                {isJobSeekingActive ? "Active" : "Inactive"}
+              </span>
+              <Switch.Root
+                checked={isJobSeekingActive}
+                onCheckedChange={handleSetJobSeekingStatus}
+                className="w-11 h-6 bg-gray-200 rounded-full relative data-[state=checked]:bg-green-600"
+              >
+                <Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 data-[state=checked]:translate-x-5" />
+              </Switch.Root>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              If you set your find job status to active, recruiters can find you
+              for job opportunities.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -472,7 +524,8 @@ const MyCV = () => {
                       Upload your CV to find work easily.
                     </h2>
                     <p className="text-sm text-gray-600">
-                     Reduce up to 50% time to find a hot and suitable job for your career.
+                      Reduce up to 50% time to find a hot and suitable job for
+                      your career.
                     </p>
                   </div>
                   <img
@@ -524,7 +577,6 @@ const MyCV = () => {
                 Upload CV
               </button>
 
-              {/* Four Blocks Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                 <div className="border border-gray-300 bg-white p-4 rounded-lg flex flex-col items-center">
                   <img
