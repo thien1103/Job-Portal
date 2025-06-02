@@ -26,6 +26,7 @@ const jobSchema = new mongoose.Schema({
     },
     jobType: {
         type: String,
+        enum: ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'],
         required: true
     },
     position: {
@@ -48,10 +49,28 @@ const jobSchema = new mongoose.Schema({
             ref: 'Application',
         }
     ],
-    recombeeSynced: {
-        type: Boolean,
-        default: false
+
+    deadline: {
+        type: Date,
+        required: true
+    },
+    benefits: [{
+        type: String
+    }],
+    level: {
+        type: String,
+        enum: ['Intern', 'Fresher', 'Junior', 'Middle', 'Senior', 'Manager', 'Director'],
+        required: true
     }
 }, { timestamps: true });
+
+jobSchema.index({ title: "text", description: "text", location: "text", requirements: "text", benefits: "text" }, { weights: { title: 10, description: 5, location: 3, requirements: 2, benefits: 1 } });
+jobSchema.index({ deadline: 1 }); 
+jobSchema.index({ level: 1 });
+jobSchema.index({ applications: 1 });
+jobSchema.index({ requirements: 1 });
+jobSchema.index({ experienceLevel: 1 });
+jobSchema.index({ company: 1 });
+
 
 export const Job = mongoose.model("Job", jobSchema);

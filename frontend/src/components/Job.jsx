@@ -129,6 +129,7 @@ const Job = ({ job, isSavedJobsPage, savedJobIds = [] }) => {
           <Badge className="text-[#7209b7] font-bold line-clamp-1" variant="ghost">
             {job?.salary?.toLocaleString("vi-VN")} VND
           </Badge>
+
         </div>
       </div>
       <div className="flex items-center justify-between mt-4">

@@ -6,25 +6,38 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.9.0",
-    "backend": "file:",
-    "bcryptjs": "^2.4.3",
-    "cloudinary": "^2.3.0",
-    "cookie-parser": "^1.4.6",
+
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.6.0",
+    "cookie-parser": "^1.4.7",
+
     "cors": "^2.8.5",
     "datauri": "^4.1.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "ioredis": "^5.6.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.1",
+    "mongoose": "^8.12.1",
     "multer": "^1.4.5-lts.1",
-    "nodemon": "^3.1.3",
-    "recombee-api-client": "^5.0.2"
+
+    "natural": "^8.1.0",
+    "node-fetch": "^3.3.2",
+    "node-wordnet": "^0.1.12",
+    "nodemailer": "^6.10.1",
+    "nodemon": "^3.1.9",
+    "pdf.js-extract": "^0.2.1",
+    "python-shell": "^5.0.0",
+    "recombee-api-client": "^5.0.2",
+    "wndb-with-exceptions": "^3.0.2"
+
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
