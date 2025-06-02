@@ -391,6 +391,62 @@ export const setProfilePublic = async (req, res, next) => {
     }
 };
 
+export const setFindJobStatus = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw createError("User not found", 404);
+        }
+
+        if (user.role !== 'applicant') {
+            throw createError("Only applicants can set job search status", 403);
+        }
+
+        user.profile.isFindJob = !user.profile.isFindJob;
+        user.profile.lastFindJobUpdate = new Date();
+        await user.save();
+
+        return res.status(200).json({
+            message: `Job search status set to ${user.profile.isFindJob ? "active" : "inactive"} successfully`,
+            success: true
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getFindJobStatus = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        if (!userId) {
+            throw createError('User not authenticated', 401);
+        }
+
+        const user = await User.findById(userId).select('role profile.isFindJob profile.lastFindJobUpdate');
+        if (!user) {
+            throw createError('User not found', 404);
+        }
+
+        if (user.role !== 'applicant') {
+            throw createError('Only applicants can view job search status', 403);
+        }
+
+        return res.status(200).json({
+            message: 'Find job status retrieved successfully',
+            success: true,
+            data: {
+                isFindJob: user.profile.isFindJob,
+                lastFindJobUpdate: user.profile.lastFindJobUpdate
+            }
+        });
+    } catch (error) {
+        console.error('Error in getFindJobStatus:', error);
+        next(error);
+    }
+};
+
 export const changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
@@ -1002,132 +1058,6 @@ export const getApplicantPrimaryCV = async (req, res, next) => {
         next(error);
     }
 };
-
-// export const updateProfileFromCV = async (req, res, next) => {
-//     try {
-//         const userId = req.user._id;
-//         const file = req.file;
-
-//         if (!file) {
-//             throw createError("PDF file is required", 400);
-//         }
-
-//         const allowedMimeTypes = ["application/pdf"];
-//         const fileExtension = file.originalname.split(".").pop().toLowerCase();
-//         if (!allowedMimeTypes.includes(file.mimetype) || fileExtension !== "pdf") {
-//             throw createError("Only PDF files are allowed", 400);
-//         }
-
-//         const pdfExtract = new PDFExtract();
-//         const data = await pdfExtract.extractBuffer(file.buffer, {});
-//         const text = data.pages
-//             .map(page => {
-//                 return page.content
-//                     .sort((a, b) => a.y - b.y || a.x - b.x)
-//                     .map(item => item.str)
-//                     .join(" ");
-//             })
-//             .join("\n")
-//             .replace(/\s+/g, " ")
-//             .replace(/([A-Z])\s+([A-Z])\s+([A-Z])/g, "$1$2$3");
-
-//         console.log("Extracted raw text:", text);
-
-//         const prompt = `
-// You are an expert in parsing resumes/CVs. Below is the raw text extracted from a CV, which may contain irregular spacing or formatting. Extract the following information in a structured JSON format. Ensure all fields are filled, even if data is missing, using empty strings or null where applicable. Do NOT extract fullname, email, or phoneNumber.
-
-// - bio: A summary or objective (if available)
-// - skills: A list of skills (e.g., programming languages, tools, etc.). Ensure each skill is a concise string (e.g., "Node.js", not "Backend developing with Node.js runtime").
-// - experience: A list of work experiences, each with jobTitle, company, startDate (in YYYY-MM-DD format), endDate (in YYYY-MM-DD format), and description. Ensure dates are correctly formatted.
-// - education: A list of educational qualifications, each with degree, institution, startDate (in YYYY-MM-DD format), and endDate (in YYYY-MM-DD format). If dates are missing, use null.
-
-// Here is the raw text from the CV:
-
-// ${text}
-
-// Return ONLY the JSON object with the extracted information in the exact format requested. Do not include any additional text, explanations, or markdown. Ensure the output is a valid JSON string.
-// `;
-
-//         const response = await fetch("http://localhost:11434/api/generate", {
-//             method: "POST",
-//             headers: {
-//                 "Content-Type": "application/json",
-//             },
-//             body: JSON.stringify({
-//                 model: "mistral",
-//                 prompt: prompt,
-//                 stream: false,
-//                 options: {
-//                     temperature: 0.3,
-//                     max_tokens: 1500
-//                 }
-//             }),
-//         });
-
-//         if (!response.ok) {
-//             throw createError("Failed to fetch response from Ollama. Ensure Ollama server is running at http://localhost:11434.", 500);
-//         }
-
-//         const responseData = await response.json();
-//         const responseText = responseData.response.trim();
-
-
-//         let parsedData;
-//         try {
-//             parsedData = JSON.parse(responseText);
-//         } catch (e) {
-//             console.log("Raw response from Ollama:", responseText);
-//             const jsonMatch = responseText.match(/{[\s\S]*}/);
-//             if (jsonMatch) {
-//                 try {
-//                     parsedData = JSON.parse(jsonMatch[0]);
-//                 } catch (innerError) {
-//                     throw createError("Failed to parse JSON from Ollama response even after extraction. Check raw response in logs.", 500);
-//                 }
-//             } else {
-//                 throw createError("Failed to parse JSON from Ollama response. No valid JSON found. Check raw response in logs.", 500);
-//             }
-//         }
-
-//         console.log("Parsed data from Ollama:", parsedData);
-
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             throw createError("User not found", 404);
-//         }
-
-//         user.profile = {
-//             ...user.profile,
-//             bio: parsedData.bio || user.profile.bio,
-//             skills: parsedData.skills || user.profile.skills,
-//             experience: parsedData.experience?.map(exp => ({
-//                 jobTitle: exp.jobTitle || "",
-//                 company: exp.company || "",
-//                 startDate: exp.startDate ? new Date(exp.startDate) : null,
-//                 endDate: exp.endDate ? new Date(exp.endDate) : null,
-//                 description: exp.description || ""
-//             })) || user.profile.experience,
-//             education: parsedData.education?.map(edu => ({
-//                 degree: edu.degree || "",
-//                 institution: edu.institution || "",
-//                 startDate: edu.startDate ? new Date(edu.startDate) : null,
-//                 endDate: edu.endDate ? new Date(edu.endDate) : null
-//             })) || user.profile.education,
-//             isPublic: user.profile.isPublic
-//         };
-
-//         await user.save();
-
-//         return res.status(200).json({
-//             message: "Profile updated successfully from CV",
-//             user,
-//             success: true
-//         });
-//     } catch (error) {
-//         console.log("Error in updateProfileFromCV: ", error);
-//         next(error);
-//     }
-// };
 
 // Hàm kiểm tra định dạng ngày hợp lệ
 const isValidDateString = (dateString) => {
