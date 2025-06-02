@@ -8,8 +8,10 @@ import userRoute from "./routes/user.route.js";
 import companyRoute from "./routes/company.route.js";
 import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
+
 import adminRoute from "./routes/admin.route.js";
 import { errorHandler } from './middlewares/errorHandler.js';
+
 
 dotenv.config({});
 
@@ -26,6 +28,7 @@ const allowedOrigins = [
     "https://job-portal-4cda.onrender.com"
 ];
 const corsOptions = {
+
     origin: (origin, callback) => {
         console.log("Incoming origin:", origin);
 
@@ -42,12 +45,12 @@ const corsOptions = {
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
 }
 
+
 app.use(cors(corsOptions));
 
 const PORT = process.env.PORT || 3000;
 
 
-// api's
 app.use("/user", userRoute);
 app.use("/company", companyRoute);
 app.use("/job", jobRoute);
@@ -63,7 +66,14 @@ app.use((req, res, next) => {
 
 app.use(errorHandler);
 
+
 app.listen(PORT, async () => {
     await connectDB();
     console.log(`Server running at port ${PORT}`);
-})
+    // Initial job sync
+    try {
+        await RecombeeService.syncJobs();
+    } catch (error) {
+        console.error('Initial job sync failed:', error);
+    }
+});

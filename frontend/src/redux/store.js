@@ -1,3 +1,4 @@
+// store.js
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import authSlice from "./authSlice";
 import jobSlice from "./jobSlice";
@@ -16,6 +17,7 @@ import storage from "redux-persist/lib/storage";
 import companySlice from "./companySlice";
 import applicationSlice from "./applicationSlice";
 import adminAuthReducer from "./adminAuthSlice";
+import recommendJobSlice from "./recommendJobSlice"; // Import the new slice
 
 const persistConfig = {
   key: "root",
@@ -30,6 +32,7 @@ const rootReducer = combineReducers({
   application: applicationSlice,
   authAdmin: adminAuthReducer,
   searchJob: searchJobReducer,
+  recommendJob: recommendJobSlice, // Add the new reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { Avatar, AvatarImage } from '../ui/avatar';
-import { LogOut, User2, Heart } from 'lucide-react';
+import { LogOut, User2, Heart, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -62,7 +62,12 @@ const line3Variants = {
   closed: { rotate: 0, y: 0 },
 };
 
-const NavItem = ({ itemName, to, onClick }) => {
+const dropdownVariants = {
+  hidden: { opacity: 0, y: -10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+};
+
+const NavItem = ({ itemName, to, onClick, hasDropdown, isDropdownItem }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const onHoverStart = () => setIsHovered(true);
@@ -72,7 +77,7 @@ const NavItem = ({ itemName, to, onClick }) => {
     <motion.li
       onHoverStart={onHoverStart}
       onHoverEnd={onHoverEnd}
-      className='px-4 py-2 text-black/75 font-[500] text-xl hover:text-black transition-colors duration-300'
+      className={`px-4 py-2 text-black/75 font-[500] ${isDropdownItem ? 'text-base' : 'text-xl'} hover:text-black transition-colors duration-300 `}
       custom={0}
       variants={navItemVariants}
       initial="hidden"
@@ -80,13 +85,14 @@ const NavItem = ({ itemName, to, onClick }) => {
       whileHover="hover"
     >
       <Link
-        className='relative cursor-pointer py-1.5'
+        className={`relative cursor-pointer py-1.5 flex items-center ${hasDropdown ? 'gap-1' : ''}`}
         to={to}
         onClick={onClick}
       >
         {itemName}
+        {hasDropdown && <ChevronDown className="w-4 h-4" />}
         <AnimatePresence>
-          {isHovered && <Underline />}
+          {isHovered && !isDropdownItem && <Underline />}
         </AnimatePresence>
       </Link>
     </motion.li>
@@ -111,6 +117,34 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isJobsPopoverOpen, setIsJobsPopoverOpen] = useState(false);
+  const closeTimeoutRef = useRef(null);
+
+  const handleMouseEnterTrigger = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    setIsJobsPopoverOpen(true);
+  };
+
+  const handleMouseLeaveTrigger = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsJobsPopoverOpen(false);
+    }, 200); // 200ms delay to allow moving to PopoverContent
+  };
+
+  const handleMouseEnterContent = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    setIsJobsPopoverOpen(true);
+  };
+
+  const handleMouseLeaveContent = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsJobsPopoverOpen(false);
+    }, 200);
+  };
 
   const logoutHandler = async () => {
     try {
@@ -160,7 +194,51 @@ const Navbar = () => {
                 ) : (
                   <>
                     <NavItem itemName='Home' to='/' />
-                    <NavItem itemName='Jobs' to='/jobs' />
+                    {user && user.role === 'applicant' ? (
+                      <Popover
+                        open={isJobsPopoverOpen}
+                        onOpenChange={setIsJobsPopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <motion.div
+                            onMouseEnter={handleMouseEnterTrigger}
+                            onMouseLeave={handleMouseLeaveTrigger}
+                          >
+                            <NavItem
+                              itemName='Jobs'
+                              hasDropdown
+                            />
+                          </motion.div>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-55 p-2"
+                          onMouseEnter={handleMouseEnterContent}
+                          onMouseLeave={handleMouseLeaveContent}
+                        >
+                          <motion.ul
+                            initial="hidden"
+                            animate="visible"
+                            variants={dropdownVariants}
+                            className="flex flex-col"
+                          >
+                            <NavItem
+                              itemName='Jobs'
+                              to='/jobs'
+                              isDropdownItem
+                              onClick={() => setIsJobsPopoverOpen(false)}
+                            />
+                            <NavItem
+                              itemName='Recommended Jobs'
+                              to='/recommended-jobs'
+                              isDropdownItem
+                              onClick={() => setIsJobsPopoverOpen(false)}
+                            />
+                          </motion.ul>
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <NavItem itemName='Jobs' to='/jobs' />
+                    )}
                     <NavItem itemName='Career Handbook' to='/careerHandbook' />
                     {user && user.role === 'applicant' && (
                       <NavItem itemName='My CV' to='/myCV' />
@@ -296,6 +374,9 @@ const Navbar = () => {
                   <>
                     <NavItem itemName='Home' to='/' onClick={() => setIsOpen(false)} />
                     <NavItem itemName='Jobs' to='/jobs' onClick={() => setIsOpen(false)} />
+                    {user && user.role === 'applicant' && (
+                      <NavItem itemName='Recommended Jobs' to='/recommended-jobs' onClick={() => setIsOpen(false)} />
+                    )}
                     <NavItem itemName='Career Handbook' to='/careerHandbook' onClick={() => setIsOpen(false)} />
                     {user && user.role === 'applicant' && (
                       <>

@@ -28,6 +28,7 @@ import EditJob from "./components/recruiter/EditRecruiterJob";
 import VisitUserPage from './components/recruiter/VisitUserPage';
 import VisitCompanyPage from './components/VisitCompanyPage';
 import SavedJobs from './components/SaveJobs';
+import RecommendedJobs from './components/RecommendedJobs';
 
 const appRouter = createBrowserRouter([
   {
@@ -65,6 +66,10 @@ const appRouter = createBrowserRouter([
   {
     path: "/saved-jobs",
     element: <SavedJobs />,
+  },
+  {
+    path: "/recommended-jobs",
+    element: <RecommendedJobs />,
   },
   {
     path: "/myCV",
