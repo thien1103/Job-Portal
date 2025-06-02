@@ -34,10 +34,16 @@ export const recommendJobs = async (userId, topN = 5) => {
         }
 
         const jobs = await Job.find()
-            .populate('company', 'name')
-            .select('title requirements salary experienceLevel location jobType position company deadline benefits level applications createdAt updatedAt')
+            .populate({
+                path: 'company',
+                select: 'name description website location logo contactInfo'
+            })
+            .populate({
+                path: 'applications',
+                select: '_id userId status createdAt'
+            })
             .lean();
-
+        
         if (!jobs.length) {
             return { message: 'No job found', success: true, data: [] };
         }
@@ -107,6 +113,7 @@ export const recommendJobs = async (userId, topN = 5) => {
                     description: job.description ? job.description.split('\n').map(line => line.trim()).filter(line => line) : [],
                     requirements: job.requirements || [],
                     salary: job.salary,
+                    experienceLevel: job.experienceLevel,
                     location: job.location,
                     jobType: job.jobType,
                     position: job.position,
@@ -116,10 +123,10 @@ export const recommendJobs = async (userId, topN = 5) => {
                     level: job.level,
                     applications: job.applications,
                     createdAt: job.createdAt,
-                    updatedAt: job.updatedAt
-                },
-                matchedSkills: [...matchedSkills],
-                score
+                    updatedAt: job.updatedAt,
+                    matchedSkills: [...matchedSkills],
+                    score
+                }
             };
         });
 
