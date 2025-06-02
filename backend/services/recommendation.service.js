@@ -32,7 +32,7 @@ export const recommendJobs = async (userId, topN = 5) => {
         if (!user.profile.isFindJob) {
             return { message: 'User is not looking for a job', success: true, data: [] };
         }
-
+        
         const jobs = await Job.find()
             .populate({
                 path: 'company',
@@ -42,8 +42,9 @@ export const recommendJobs = async (userId, topN = 5) => {
                 path: 'applications',
                 select: '_id userId status createdAt'
             })
+            .select('title description requirements salary experienceLevel location jobType position deadline benefits level applications createdAt updatedAt')
             .lean();
-        
+
         if (!jobs.length) {
             return { message: 'No job found', success: true, data: [] };
         }
@@ -124,9 +125,9 @@ export const recommendJobs = async (userId, topN = 5) => {
                     applications: job.applications,
                     createdAt: job.createdAt,
                     updatedAt: job.updatedAt,
-                    matchedSkills: [...matchedSkills],
-                    score
-                }
+                },
+                matchedSkills: [...matchedSkills],
+                score
             };
         });
 
